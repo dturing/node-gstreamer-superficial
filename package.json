@@ -1,0 +1,39 @@
+{
+  "name": "gstreamer-superficial",
+  "version": "0.1",
+  "description": "Superficial GStreamer binding",
+  "author": {
+    "name": "Daniel Turing",
+    "email": "mail@danielturing.com",
+    "url": "http://danturing.com"
+  },
+  "main": "./build/Release/gstreamer-superficial",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:dturing/node-gstreamer-superficial.git"
+  },
+  "maintainers": [
+  ],
+  "contributors": [
+  ],
+  "dependencies": {
+  },
+  "devDependencies": {
+  },
+  "engines": {
+    "node": ">= 0.10.15"
+  },
+  "bin": {
+  },
+  "scripts": {
+    "install": "node-gyp rebuild"
+  },
+  "gypfile": true,
+  "readme": "You shouldn't've read me.",
+  "readmeFilename": "README.md",
+  "bugs": {
+    "url": "https://github.com/dturing/node-gstreamer-superficial/issues"
+  },
+  "_id": "gstreamer-superficial@0.1",
+  "_from": "gstreamer-superficial@"
+}
