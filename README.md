@@ -34,7 +34,7 @@ target.set( {
 Pipeline also knows .stop(), .pause() and .pollBus()
 
 
-## Polling the GStreamer Pipeline Bus
+### Polling the GStreamer Pipeline Bus
 
 You can asynchronously handle bus messages using Pipeline.pollBus(callback):
 
@@ -47,7 +47,7 @@ pipeline.pollBus( function(msg) {
 (see also examples/bus.js)
 
 
-## Handling binary data
+### Handling binary data
 
 You can feast off GStreamer's appsink to handle binary data.
 .pull starts a background work queue and calls your callback whenever a buffer is (or caps are) available:
@@ -66,7 +66,7 @@ appsink.pull( function(buf) {
 (see examples/appsink.js)
 
 
-## A simple Ogg/Theora streaming server
+### A simple Ogg/Theora streaming server
 
 is implemented in examples/streaming, just run server.js (requires express) and point your browser to http://localhost:8001. (Tested only with Chromium). This handles retaining the streamheader to feed first to every newly connected client.
 
