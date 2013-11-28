@@ -1,18 +1,48 @@
 #include <node.h>
 #include <node_buffer.h>
-#include <v8.h>
+//#include <v8.h>
 
 #include <gst/gst.h>
 #include <gst/app/gstappsink.h>
 #include <string.h>
+#include <stdlib.h>
 
 v8::Handle<v8::Value> gvalue_to_v8( const GValue *gv );
 
-v8::Persistent<v8::Value> gstbuffer_to_v8( GstBuffer *buf ) {
+class MallocArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
+	public:
+		virtual void* Allocate(size_t length) { 
+				return malloc(length); }
+		virtual void Free(void* data) { 
+				free(data); }
+};
+
+v8::Handle<v8::Object> createBuffer(const void *data, size_t size) {
+    v8::Handle<v8::Value> abv = v8::Context::GetCurrent()->Global()->Get(v8::String::NewSymbol("ArrayBuffer"));
+    v8::Handle<v8::Value> argv[] = { v8::Integer::NewFromUnsigned(size) };
+    v8::Handle<v8::Object> arrbuf = v8::Handle<v8::Function>::Cast(abv)->NewInstance(1, argv);
+    void *buffer = arrbuf->GetPointerFromInternalField(0);
+    memcpy(buffer, data, size);
+
+    v8::Handle<v8::Value> ui8av = v8::Context::GetCurrent()->Global()->Get(v8::String::NewSymbol("Uint8ClampedArray"));
+    argv[0] = arrbuf;
+    v8::Handle<v8::Object> result = v8::Handle<v8::Function>::Cast(ui8av)->NewInstance(1, argv);
+    return result;
+}
+
+
+v8::Handle<v8::Value> gstsample_to_v8( GstSample *sample ) {
 	GstMapInfo map;
+	GstBuffer *buf = gst_sample_get_buffer( sample );
 	if( gst_buffer_map( buf, &map, GST_MAP_READ ) ) {
 		const unsigned char *data = map.data;
 		int length = map.size;
+		v8::Handle<v8::Object> frame = createBuffer( data, length );
+		return frame;
+	}
+
+	return v8::Undefined();
+	/*	plain node slowBuffer
 		node::Buffer *slowBuffer = node::Buffer::New(length);
 		memcpy(node::Buffer::Data(slowBuffer), data, length);
 		return slowBuffer->handle_;
@@ -20,7 +50,7 @@ v8::Persistent<v8::Value> gstbuffer_to_v8( GstBuffer *buf ) {
 
 	node::Buffer *slowBuffer = node::Buffer::New(0);
 	return slowBuffer->handle_;
-
+	*/
 /* Gst 0.10:
 	const char *data = (const char *)GST_BUFFER_DATA(buf);
 	int length = GST_BUFFER_SIZE(buf);
@@ -74,12 +104,14 @@ v8::Handle<v8::Value> gvalue_to_v8( const GValue *gv ) {
 
 	if( GST_VALUE_HOLDS_ARRAY(gv) ) {
 	   	return gstvaluearray_to_v8( gv );
+	   	/* FIXME
 	} else if( GST_VALUE_HOLDS_BUFFER(gv) ) {
 		GstBuffer *buf = gst_value_get_buffer(gv);
 		if( buf == NULL ) {
 			return v8::Undefined();
 		}
 		return gstbuffer_to_v8( buf );
+		*/
 	}
     
     GValue b = G_VALUE_INIT;
@@ -271,27 +303,27 @@ v8::Handle<v8::Value> GObjectWrap::_set(const v8::Arguments& args) {
     return scope.Close( args[1] );
 }
 
-struct BufferRequest {
+struct SampleRequest {
 	uv_work_t request;
 	v8::Persistent<v8::Function> cb_buffer, cb_caps;
-	GstBuffer *buffer;
+	GstSample *sample;
 	GstCaps *caps;
 	GObjectWrap *obj;
 };
 
 void GObjectWrap::_doPullBuffer( uv_work_t *req ) {
-	BufferRequest *br = static_cast<BufferRequest*>(req->data);
+	SampleRequest *br = static_cast<SampleRequest*>(req->data);
 
 	GstAppSink *sink = GST_APP_SINK(br->obj->obj);
-	br->buffer = gst_app_sink_pull_buffer( sink );
+	br->sample = gst_app_sink_pull_sample( sink );
 }
 
 void GObjectWrap::_pulledBuffer( uv_work_t *req, int n ) {
-	BufferRequest *br = static_cast<BufferRequest*>(req->data);
+	SampleRequest *br = static_cast<SampleRequest*>(req->data);
 	
-	if( br->buffer ) {
+	if( br->sample ) {
 		v8::HandleScope scope;
-
+/* FIXME
 		GstCaps *caps = gst_buffer_get_caps (br->buffer); 
 		if( caps && !gst_caps_is_equal( caps, br->caps )) {
 			br->caps = caps;
@@ -306,14 +338,14 @@ void GObjectWrap::_pulledBuffer( uv_work_t *req, int n ) {
 			v8::Local<v8::Value> argv[1] = { _caps };
 			br->cb_caps->Call(v8::Context::GetCurrent()->Global(), 1, argv);
 		}
-
-		v8::Persistent<v8::Value> buf = gstbuffer_to_v8( br->buffer );
+*/
+		v8::Handle<v8::Value> buf = gstsample_to_v8( br->sample );
 		
-		v8::Persistent<v8::Value> argv[1] = { buf };
+		v8::Handle<v8::Value> argv[1] = { buf };
 		br->cb_buffer->Call(v8::Context::GetCurrent()->Global(), 1, argv);
 
-		gst_buffer_unref(br->buffer);
-		br->buffer = NULL;
+		gst_sample_unref(br->sample);
+		br->sample = NULL;
 		
 		scope.Close( v8::Undefined() );
 	}
@@ -338,7 +370,7 @@ v8::Handle<v8::Value> GObjectWrap::_pull( const v8::Arguments& args ) {
 	v8::Handle<v8::Function> cb_buffer = v8::Handle<v8::Function>::Cast(args[0]);
 	v8::Handle<v8::Function> cb_caps = v8::Handle<v8::Function>::Cast(args[1]);
 	
-	BufferRequest * br = new BufferRequest();
+	SampleRequest * br = new SampleRequest();
 	br->request.data = br;
 	br->cb_buffer = v8::Persistent<v8::Function>::New( cb_buffer );
 	br->cb_caps = v8::Persistent<v8::Function>::New( cb_caps );
@@ -432,11 +464,11 @@ void Pipeline::_polledBus( uv_work_t *req, int n ) {
 //		printf("Got Bus Message type %s\n", GST_MESSAGE_TYPE_NAME(msg) );
 		v8::Local<v8::Object> m = v8::Object::New();
 		m->Set(v8::String::NewSymbol("type"), v8::String::New(GST_MESSAGE_TYPE_NAME(br->msg)) );
-	
+/*	
         if( br->msg->structure ) {
             gst_structure_to_v8( m, br->msg->structure );
         }
-
+*/
 		if( GST_MESSAGE_TYPE(br->msg) == GST_MESSAGE_ERROR ) {
 			GError *err = NULL;
 			gchar *name;
@@ -551,6 +583,7 @@ v8::Handle<v8::Value> Pipeline::_pollBus(const v8::Arguments& args) {
 
 void init( v8::Handle<v8::Object> exports ) {
 	gst_init( NULL, NULL );
+  	v8::V8::SetArrayBufferAllocator(new MallocArrayBufferAllocator());
 	GObjectWrap::Init();
 	Pipeline::Init(exports);
 }
