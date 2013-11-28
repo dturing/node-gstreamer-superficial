@@ -9,11 +9,25 @@
 v8::Handle<v8::Value> gvalue_to_v8( const GValue *gv );
 
 v8::Persistent<v8::Value> gstbuffer_to_v8( GstBuffer *buf ) {
+	GstMapInfo map;
+	if( gst_buffer_map( buf, &map, GST_MAP_READ ) ) {
+		const unsigned char *data = map.data;
+		int length = map.size;
+		node::Buffer *slowBuffer = node::Buffer::New(length);
+		memcpy(node::Buffer::Data(slowBuffer), data, length);
+		return slowBuffer->handle_;
+	}
+
+	node::Buffer *slowBuffer = node::Buffer::New(0);
+	return slowBuffer->handle_;
+
+/* Gst 0.10:
 	const char *data = (const char *)GST_BUFFER_DATA(buf);
 	int length = GST_BUFFER_SIZE(buf);
 	node::Buffer *slowBuffer = node::Buffer::New(length);
 	memcpy(node::Buffer::Data(slowBuffer), data, length);
 	return slowBuffer->handle_;
+	*/
 }
 
 v8::Handle<v8::Value> gstvaluearray_to_v8( const GValue *gv ) {
@@ -62,7 +76,7 @@ v8::Handle<v8::Value> gvalue_to_v8( const GValue *gv ) {
 	   	return gstvaluearray_to_v8( gv );
 	} else if( GST_VALUE_HOLDS_BUFFER(gv) ) {
 		GstBuffer *buf = gst_value_get_buffer(gv);
-		if( buf == NULL || GST_BUFFER_SIZE(buf) == 0 ) {
+		if( buf == NULL ) {
 			return v8::Undefined();
 		}
 		return gstbuffer_to_v8( buf );

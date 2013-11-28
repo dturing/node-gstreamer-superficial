@@ -31,7 +31,8 @@ target.set( {
 
 (see also examples/basic-pipeline.js)
 
-Pipeline also knows .stop(), .pause() and .pollBus()
+Pipeline also knows .stop(), .pause() and .pollBus(),
+the elements returned by findChild support .set(object) and .set(name,value), appsinks also support .pull (see below). 
 
 
 ### Polling the GStreamer Pipeline Bus
