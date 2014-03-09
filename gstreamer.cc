@@ -1,6 +1,6 @@
 #include <node.h>
 #include <node_buffer.h>
-//#include <v8.h>
+#include <v8.h>
 
 #include <gst/gst.h>
 #include <gst/app/gstappsink.h>
@@ -9,27 +9,18 @@
 
 v8::Handle<v8::Value> gvalue_to_v8( const GValue *gv );
 
-class MallocArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
-	public:
-		virtual void* Allocate(size_t length) { 
-				return malloc(length); }
-		virtual void Free(void* data) { 
-				free(data); }
-};
+v8::Handle<v8::Object> createBuffer(const void *data, int length) {
+	v8::HandleScope scope;
+	node::Buffer *slowBuffer = node::Buffer::New(length);
+	memcpy(node::Buffer::Data(slowBuffer), data, length);
+	v8::Local<v8::Object> globalObj = v8::Context::GetCurrent()->Global();
+	v8::Local<v8::Function> bufferConstructor = v8::Local<v8::Function>::Cast(globalObj->Get(v8::String::New("Buffer")));
+	v8::Handle<v8::Value> constructorArgs[3] = { slowBuffer->handle_, v8::Integer::New(length), v8::Integer::New(0) };
 
-v8::Handle<v8::Object> createBuffer(const void *data, size_t size) {
-    v8::Handle<v8::Value> abv = v8::Context::GetCurrent()->Global()->Get(v8::String::NewSymbol("ArrayBuffer"));
-    v8::Handle<v8::Value> argv[] = { v8::Integer::NewFromUnsigned(size) };
-    v8::Handle<v8::Object> arrbuf = v8::Handle<v8::Function>::Cast(abv)->NewInstance(1, argv);
-    void *buffer = arrbuf->GetPointerFromInternalField(0);
-    memcpy(buffer, data, size);
+	v8::Local<v8::Object> actualBuffer = bufferConstructor->NewInstance(3, constructorArgs);
 
-    v8::Handle<v8::Value> ui8av = v8::Context::GetCurrent()->Global()->Get(v8::String::NewSymbol("Uint8ClampedArray"));
-    argv[0] = arrbuf;
-    v8::Handle<v8::Object> result = v8::Handle<v8::Function>::Cast(ui8av)->NewInstance(1, argv);
-    return result;
+	return scope.Close(actualBuffer);
 }
-
 
 v8::Handle<v8::Value> gstsample_to_v8( GstSample *sample ) {
 	GstMapInfo map;
@@ -42,22 +33,6 @@ v8::Handle<v8::Value> gstsample_to_v8( GstSample *sample ) {
 	}
 
 	return v8::Undefined();
-	/*	plain node slowBuffer
-		node::Buffer *slowBuffer = node::Buffer::New(length);
-		memcpy(node::Buffer::Data(slowBuffer), data, length);
-		return slowBuffer->handle_;
-	}
-
-	node::Buffer *slowBuffer = node::Buffer::New(0);
-	return slowBuffer->handle_;
-	*/
-/* Gst 0.10:
-	const char *data = (const char *)GST_BUFFER_DATA(buf);
-	int length = GST_BUFFER_SIZE(buf);
-	node::Buffer *slowBuffer = node::Buffer::New(length);
-	memcpy(node::Buffer::Data(slowBuffer), data, length);
-	return slowBuffer->handle_;
-	*/
 }
 
 v8::Handle<v8::Value> gstvaluearray_to_v8( const GValue *gv ) {
@@ -72,18 +47,6 @@ v8::Handle<v8::Value> gstvaluearray_to_v8( const GValue *gv ) {
 		array->Set( v8::Number::New(i), gvalue_to_v8(gst_value_array_get_value(gv,i)) );
 	}
 	return array;
-/*
-	first_element = gst_value_array_get_value (streamheader, 0);
-
-	if (!GST_VALUE_HOLDS_BUFFER (first_element)) {
-		return scope.Close(v8::ThrowException( v8::String::New("first streamheader not a buffer") ));
-	}
-
-	buf = gst_value_get_buffer (first_element);
-	if (buf == NULL || GST_BUFFER_SIZE (buf) == 0) {
-		return scope.Close(v8::ThrowException( v8::String::New("invalid first streamheader buffer") ));
-	}
-*/
 }
 
 v8::Handle<v8::Value> gvalue_to_v8( const GValue *gv ) {
@@ -572,21 +535,11 @@ v8::Handle<v8::Value> Pipeline::_findChild(const v8::Arguments& args) {
 
 	return scope.Close( v8::Undefined() );
 }
-/*
-v8::Handle<v8::Value> Pipeline::_pollBus(const v8::Arguments& args) {
-	v8::HandleScope scope;
-	Pipeline* obj = ObjectWrap::Unwrap<Pipeline>(args.This());
-
-	return scope.Close( obj->pollBus() );
-}
-*/
 
 void init( v8::Handle<v8::Object> exports ) {
 	gst_init( NULL, NULL );
-  	v8::V8::SetArrayBufferAllocator(new MallocArrayBufferAllocator());
 	GObjectWrap::Init();
 	Pipeline::Init(exports);
 }
 
 NODE_MODULE(gstreamer_superficial, init)
-
