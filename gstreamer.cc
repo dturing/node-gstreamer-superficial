@@ -135,6 +135,10 @@ class GObjectWrap : public node::ObjectWrap {
 		static v8::Handle<v8::Value> NewInstance( const v8::Arguments& args, GObject *obj );
 
 		void set( const char *name, const v8::Handle<v8::Value> value );
+
+		void play();
+		void pause();
+		void stop();
 		
 	private:
 		GObjectWrap();
@@ -146,6 +150,9 @@ class GObjectWrap : public node::ObjectWrap {
 		static v8::Handle<v8::Value> New(const v8::Arguments& args);
 		static v8::Handle<v8::Value> _get(const v8::Arguments& args);
 		static v8::Handle<v8::Value> _set(const v8::Arguments& args);
+		static v8::Handle<v8::Value> _play(const v8::Arguments& args);
+		static v8::Handle<v8::Value> _pause(const v8::Arguments& args);
+		static v8::Handle<v8::Value> _stop(const v8::Arguments& args);
 
 //		static v8::Handle<v8::Value> _onBufferAvailable(const v8::Arguments& args);
 		static void _doPullBuffer( uv_work_t *req );
@@ -240,6 +247,19 @@ void GObjectWrap::set( const char *name, const v8::Handle<v8::Value> value ) {
 	g_object_set_property( obj, name, &gv );
 }
 
+void GObjectWrap::play() {
+    gst_element_set_state( GST_ELEMENT(obj), GST_STATE_PLAYING );
+}
+
+void GObjectWrap::stop() {
+    gst_element_set_state( GST_ELEMENT(obj), GST_STATE_NULL );
+}
+
+void GObjectWrap::pause() {
+    gst_element_set_state( GST_ELEMENT(obj), GST_STATE_PAUSED );
+}
+
+
 v8::Handle<v8::Value> GObjectWrap::_set(const v8::Arguments& args) {
 	v8::HandleScope scope;
 	GObjectWrap* obj = ObjectWrap::Unwrap<GObjectWrap>(args.This());
@@ -264,6 +284,25 @@ v8::Handle<v8::Value> GObjectWrap::_set(const v8::Arguments& args) {
 		return v8::ThrowException( v8::Exception::TypeError(v8::String::New("set expects name,value or object")) );
 	}        
     return scope.Close( args[1] );
+}
+
+v8::Handle<v8::Value> GObjectWrap::_play(const v8::Arguments& args) {
+	v8::HandleScope scope;
+	GObjectWrap* obj = ObjectWrap::Unwrap<GObjectWrap>(args.This());
+	obj->play();
+	return scope.Close( v8::True() );
+}
+v8::Handle<v8::Value> GObjectWrap::_pause(const v8::Arguments& args) {
+	v8::HandleScope scope;
+	GObjectWrap* obj = ObjectWrap::Unwrap<GObjectWrap>(args.This());
+	obj->pause();
+	return scope.Close( v8::True() );
+}
+v8::Handle<v8::Value> GObjectWrap::_stop(const v8::Arguments& args) {
+	v8::HandleScope scope;
+	GObjectWrap* obj = ObjectWrap::Unwrap<GObjectWrap>(args.This());
+	obj->stop();
+	return scope.Close( v8::True() );
 }
 
 struct SampleRequest {
