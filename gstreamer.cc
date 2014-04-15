@@ -4,6 +4,7 @@
 
 #include <gst/gst.h>
 #include <gst/app/gstappsink.h>
+#include <gst/video/video.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -392,6 +393,7 @@ class Pipeline : public node::ObjectWrap {
 		void play();
 		void pause();
 		void stop();
+		void forceKeyUnit(GObject* sink, int cnt);
 		
 		GObject *findChild( const char *name );
 		v8::Handle<v8::Value> pollBus();
@@ -406,6 +408,7 @@ class Pipeline : public node::ObjectWrap {
 		static v8::Handle<v8::Value> _play(const v8::Arguments& args);
 		static v8::Handle<v8::Value> _pause(const v8::Arguments& args);
 		static v8::Handle<v8::Value> _stop(const v8::Arguments& args);
+		static v8::Handle<v8::Value> _forceKeyUnit(const v8::Arguments& args);
 		static v8::Handle<v8::Value> _findChild(const v8::Arguments& args);
 
 		static void _doPollBus( uv_work_t *req );
@@ -437,6 +440,12 @@ void Pipeline::stop() {
 
 void Pipeline::pause() {
     gst_element_set_state( GST_ELEMENT(pipeline), GST_STATE_PAUSED );
+}
+
+void Pipeline::forceKeyUnit(GObject *sink, int cnt) {
+    GstPad *sinkpad = gst_element_get_static_pad (GST_ELEMENT(sink), "sink");
+    printf("force key unit %d\n", cnt);
+    gst_pad_push_event (sinkpad, (GstEvent*) gst_video_event_new_upstream_force_key_unit(GST_CLOCK_TIME_NONE, TRUE, cnt));
 }
 
 GObject * Pipeline::findChild( const char *name ) {
@@ -526,6 +535,8 @@ void Pipeline::Init( v8::Handle<v8::Object> exports ) {
 	  v8::FunctionTemplate::New(_pause)->GetFunction());
 	tpl->PrototypeTemplate()->Set(v8::String::NewSymbol("stop"),
 	  v8::FunctionTemplate::New(_stop)->GetFunction());
+	tpl->PrototypeTemplate()->Set(v8::String::NewSymbol("forceKeyUnit"),
+	  v8::FunctionTemplate::New(_forceKeyUnit)->GetFunction());
 	tpl->PrototypeTemplate()->Set(v8::String::NewSymbol("findChild"),
 	  v8::FunctionTemplate::New(_findChild)->GetFunction());
 	tpl->PrototypeTemplate()->Set(v8::String::NewSymbol("pollBus"),
@@ -562,6 +573,15 @@ v8::Handle<v8::Value> Pipeline::_stop(const v8::Arguments& args) {
 	v8::HandleScope scope;
 	Pipeline* obj = ObjectWrap::Unwrap<Pipeline>(args.This());
 	obj->stop();
+	return scope.Close( v8::True() );
+}
+v8::Handle<v8::Value> Pipeline::_forceKeyUnit(const v8::Arguments& args) {
+	v8::HandleScope scope;
+	Pipeline* obj = ObjectWrap::Unwrap<Pipeline>(args.This());
+	v8::String::Utf8Value name( args[0]->ToString() );
+	GObject *o = obj->findChild( *name );
+	int cnt( args[1]->Int32Value() );
+	obj->forceKeyUnit( o, cnt );
 	return scope.Close( v8::True() );
 }
 v8::Handle<v8::Value> Pipeline::_findChild(const v8::Arguments& args) {
