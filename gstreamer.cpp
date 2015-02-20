@@ -1,5 +1,6 @@
 #include <node.h>
 #include <node_buffer.h>
+#include <nan.h>
 #include <v8.h>
 
 #include <gst/gst.h>
@@ -11,16 +12,16 @@
 v8::Handle<v8::Value> gvalue_to_v8( const GValue *gv );
 
 v8::Handle<v8::Object> createBuffer(const void *data, int length) {
-	v8::HandleScope scope;
+	NanEscapableScope();
 	node::Buffer *slowBuffer = node::Buffer::New(length);
 	memcpy(node::Buffer::Data(slowBuffer), data, length);
-	v8::Local<v8::Object> globalObj = v8::Context::GetCurrent()->Global();
-	v8::Local<v8::Function> bufferConstructor = v8::Local<v8::Function>::Cast(globalObj->Get(v8::String::New("Buffer")));
-	v8::Handle<v8::Value> constructorArgs[3] = { slowBuffer->handle_, v8::Integer::New(length), v8::Integer::New(0) };
+	v8::Local<v8::Object> globalObj = NanNew<v8::Context>()->Global();
+	v8::Local<v8::Function> bufferConstructor = v8::Local<v8::Function>::Cast(globalObj->Get(NanNew<v8::String>("Buffer")));
+	v8::Handle<v8::Value> constructorArgs[3] = { slowBuffer->handle_, NanNew<v8::Integer>(length), NanNew<v8::Integer>(0) };
 
 	v8::Local<v8::Object> actualBuffer = bufferConstructor->NewInstance(3, constructorArgs);
 
-	return scope.Close(actualBuffer);
+	return NanEscapeScope(actualBuffer);
 }
 
 v8::Handle<v8::Value> gstsample_to_v8( GstSample *sample ) {
@@ -33,41 +34,48 @@ v8::Handle<v8::Value> gstsample_to_v8( GstSample *sample ) {
 		return frame;
 	}
 
-	return v8::Undefined();
+	return NanUndefined();
 }
 
-v8::Handle<v8::Value> gstvaluearray_to_v8( const GValue *gv ) {
-	if( !GST_VALUE_HOLDS_ARRAY(gv) ) {
-		return v8::ThrowException( v8::Exception::TypeError(v8::String::New("not a GstValueArray")) );
+NAN_METHOD(gstvaluearray_to_v8) {
+	if( !GST_VALUE_HOLDS_ARRAY(*args[0]) ) {
+		return NanThrowError( v8::Exception::TypeError(NanNew<v8::String>("not a GstValueArray")) );
 	}
 
-	int size = gst_value_array_get_size(gv);
-	v8::Handle<v8::Array> array = v8::Array::New(gst_value_array_get_size(gv));
+	int size = gst_value_array_get_size((GValue)args[0]);
+	v8::Handle<v8::Array> array = NanNew<v8::Array>(gst_value_array_get_size((GValue)args[0]));
 	
 	for( int i=0; i<size; i++ ) {
-		array->Set( v8::Number::New(i), gvalue_to_v8(gst_value_array_get_value(gv,i)) );
+		array->Set( NanNew<v8::Number>(i), gvalue_to_v8(gst_value_array_get_value((GValue)args[0],i)) );
 	}
-	return array;
+	NanReturnValue(array);
 }
 
-v8::Handle<v8::Value> gvalue_to_v8( const GValue *gv ) {
-    switch( G_VALUE_TYPE(gv) ) {
+NAN_METHOD(gvalue_to_v8) {
+    switch( G_VALUE_TYPE(args[0]) ) {
         case G_TYPE_STRING:
-            return v8::String::New( g_value_get_string(gv) );
+            NanReturnValue(NanNew<v8::String>( g_value_get_string(args[0]) ));
+            break;
         case G_TYPE_BOOLEAN:
-        	return v8::Boolean::New( g_value_get_boolean(gv) );
+        	NanReturnValue(NanNew<v8::Boolean>( g_value_get_boolean(args[0]) ));
+        	break;
         case G_TYPE_INT:
-            return v8::Number::New( g_value_get_int(gv) );
+            NanReturnValue(NanNew<v8::Number>( g_value_get_int(args[0]) ));
+            break;
         case G_TYPE_UINT:
-            return v8::Number::New( g_value_get_uint(gv) );
+            NanReturnValue(NanNew<v8::Number>( g_value_get_uint(args[0]) ));
+            break;
         case G_TYPE_FLOAT:
-            return v8::Number::New( g_value_get_float(gv) );
+            NanReturnValue(NanNew<v8::Number>( g_value_get_float(args[0]) ));
+            break;
         case G_TYPE_DOUBLE:
-            return v8::Number::New( g_value_get_double(gv) );
+            NanReturnValue(NanNew<v8::Number>( g_value_get_double(args[0]) ));
+            break;
     }
 
 	if( GST_VALUE_HOLDS_ARRAY(gv) ) {
-	   	return gstvaluearray_to_v8( gv );
+	   	NanReturnValue(gstvaluearray_to_v8( gv ));
+	   	return;
 	   	/* FIXME
 	} else if( GST_VALUE_HOLDS_BUFFER(gv) ) {
 		GstBuffer *buf = gst_value_get_buffer(gv);
@@ -82,7 +90,8 @@ v8::Handle<v8::Value> gvalue_to_v8( const GValue *gv ) {
 	/* Attempt to transform it into a GValue of type STRING */
 	g_value_init (&b, G_TYPE_STRING);
 	if( !g_value_type_transformable (G_TYPE_INT, G_TYPE_STRING) ) {
-		return v8::Undefined();
+		NanReturnValue(NanUndefined());
+		return;
 	}
 
 //	printf("Value is of unhandled type %s\n", g_type_name( G_VALUE_TYPE(gv) ) );
@@ -90,8 +99,11 @@ v8::Handle<v8::Value> gvalue_to_v8( const GValue *gv ) {
 	g_value_transform( gv, &b );
 
 	const char *str = g_value_get_string( &b );
-	if( str == NULL ) return v8::Undefined(); 
-    return v8::String::New( g_value_get_string (&b) );
+	if( str == NULL ) {
+	    NanReturnValue(NanUndefined());
+	} else {
+        NanReturnValue(NanNew<v8::String>( g_value_get_string (&b) ));
+    }
 }
 
 void v8_to_gvalue( v8::Handle<v8::Value> v, GValue *gv ) {

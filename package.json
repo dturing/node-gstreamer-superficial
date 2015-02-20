@@ -12,19 +12,16 @@
     "type": "git",
     "url": "git@github.com:dturing/node-gstreamer-superficial.git"
   },
-  "maintainers": [
-  ],
-  "contributors": [
-  ],
+  "maintainers": [],
+  "contributors": [],
   "dependencies": {
+    "nan": "^1.6.2"
   },
-  "devDependencies": {
-  },
+  "devDependencies": {},
   "engines": {
-    "node": ">= 0.10.15"
+    "node": ">= 0.11.13"
   },
-  "bin": {
-  },
+  "bin": {},
   "scripts": {
     "install": "node-gyp rebuild"
   },
