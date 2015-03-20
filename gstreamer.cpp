@@ -11,17 +11,12 @@
 
 v8::Handle<v8::Value> gvalue_to_v8( const GValue *gv );
 
-v8::Handle<v8::Object> createBuffer(const void *data, int length) {
+v8::Handle<v8::Object> createBuffer(const char *data, int length) {
 	NanEscapableScope();
-	node::Buffer *slowBuffer = node::Buffer::New(length);
-	memcpy(node::Buffer::Data(slowBuffer), data, length);
-	v8::Local<v8::Object> globalObj = NanNew<v8::Context>()->Global();
-	v8::Local<v8::Function> bufferConstructor = v8::Local<v8::Function>::Cast(globalObj->Get(NanNew<v8::String>("Buffer")));
-	v8::Handle<v8::Value> constructorArgs[3] = { slowBuffer->handle_, NanNew<v8::Integer>(length), NanNew<v8::Integer>(0) };
 
-	v8::Local<v8::Object> actualBuffer = bufferConstructor->NewInstance(3, constructorArgs);
+	v8::Local<v8::Object> buffer = NanNewBufferHandle(data, length);
 
-	return NanEscapeScope(actualBuffer);
+	return NanEscapeScope(buffer);
 }
 
 v8::Handle<v8::Value> gstsample_to_v8( GstSample *sample ) {
@@ -30,68 +25,61 @@ v8::Handle<v8::Value> gstsample_to_v8( GstSample *sample ) {
 	if( gst_buffer_map( buf, &map, GST_MAP_READ ) ) {
 		const unsigned char *data = map.data;
 		int length = map.size;
-		v8::Handle<v8::Object> frame = createBuffer( data, length );
+		v8::Handle<v8::Object> frame = createBuffer( (const char *)data, length );
 		return frame;
 	}
 
 	return NanUndefined();
 }
 
-NAN_METHOD(gstvaluearray_to_v8) {
-	if( !GST_VALUE_HOLDS_ARRAY(*args[0]) ) {
-		return NanThrowError( v8::Exception::TypeError(NanNew<v8::String>("not a GstValueArray")) );
+v8::Handle<v8::Value> gstvaluearray_to_v8( const GValue *gv ) {
+	if( !GST_VALUE_HOLDS_ARRAY(gv) ) {
+		NanThrowTypeError("not a GstValueArray");
+		return NanUndefined();
 	}
 
-	int size = gst_value_array_get_size((GValue)args[0]);
-	v8::Handle<v8::Array> array = NanNew<v8::Array>(gst_value_array_get_size((GValue)args[0]));
-	
+	int size = gst_value_array_get_size(gv);
+	v8::Handle<v8::Array> array = NanNew<v8::Array>(gst_value_array_get_size(gv));
+
 	for( int i=0; i<size; i++ ) {
-		array->Set( NanNew<v8::Number>(i), gvalue_to_v8(gst_value_array_get_value((GValue)args[0],i)) );
+		array->Set( NanNew<v8::Number>(i), gvalue_to_v8(gst_value_array_get_value(gv,i)) );
 	}
-	NanReturnValue(array);
+	return array;
 }
 
-NAN_METHOD(gvalue_to_v8) {
-    switch( G_VALUE_TYPE(args[0]) ) {
-        case G_TYPE_STRING:
-            NanReturnValue(NanNew<v8::String>( g_value_get_string(args[0]) ));
-            break;
-        case G_TYPE_BOOLEAN:
-        	NanReturnValue(NanNew<v8::Boolean>( g_value_get_boolean(args[0]) ));
-        	break;
-        case G_TYPE_INT:
-            NanReturnValue(NanNew<v8::Number>( g_value_get_int(args[0]) ));
-            break;
-        case G_TYPE_UINT:
-            NanReturnValue(NanNew<v8::Number>( g_value_get_uint(args[0]) ));
-            break;
-        case G_TYPE_FLOAT:
-            NanReturnValue(NanNew<v8::Number>( g_value_get_float(args[0]) ));
-            break;
-        case G_TYPE_DOUBLE:
-            NanReturnValue(NanNew<v8::Number>( g_value_get_double(args[0]) ));
-            break;
-    }
+v8::Handle<v8::Value> gvalue_to_v8( const GValue *gv ) {
+	switch( G_VALUE_TYPE(gv) ) {
+		case G_TYPE_STRING:
+			return NanNew<v8::String>( g_value_get_string(gv) );
+		case G_TYPE_BOOLEAN:
+			return NanNew<v8::Boolean>( g_value_get_boolean(gv) );
+		case G_TYPE_INT:
+			return NanNew<v8::Number>( g_value_get_int(gv) );
+		case G_TYPE_UINT:
+			return NanNew<v8::Number>( g_value_get_uint(gv) );
+		case G_TYPE_FLOAT:
+			return NanNew<v8::Number>( g_value_get_float(gv) );
+		case G_TYPE_DOUBLE:
+			return NanNew<v8::Number>( g_value_get_double(gv) );
+	}
 
 	if( GST_VALUE_HOLDS_ARRAY(gv) ) {
-	   	NanReturnValue(gstvaluearray_to_v8( gv ));
-	   	return;
-	   	/* FIXME
-	} else if( GST_VALUE_HOLDS_BUFFER(gv) ) {
-		GstBuffer *buf = gst_value_get_buffer(gv);
-		if( buf == NULL ) {
-			return v8::Undefined();
-		}
-		return gstbuffer_to_v8( buf );
-		*/
+		return gstvaluearray_to_v8( gv );
+		/* FIXME
+    } else if( GST_VALUE_HOLDS_BUFFER(gv) ) {
+        GstBuffer *buf = gst_value_get_buffer(gv);
+        if( buf == NULL ) {
+            return v8::Undefined();
+        }
+        return gstbuffer_to_v8( buf );
+        */
 	}
-    
-    GValue b = G_VALUE_INIT;
+
+	GValue b = G_VALUE_INIT;
 	/* Attempt to transform it into a GValue of type STRING */
 	g_value_init (&b, G_TYPE_STRING);
 	if( !g_value_type_transformable (G_TYPE_INT, G_TYPE_STRING) ) {
-		NanReturnValue(NanUndefined());
-		return;
+		return NanUndefined();
 	}
 
 //	printf("Value is of unhandled type %s\n", g_type_name( G_VALUE_TYPE(gv) ) );
@@ -99,11 +87,8 @@ NAN_METHOD(gvalue_to_v8) {
 	g_value_transform( gv, &b );
 
 	const char *str = g_value_get_string( &b );
-	if( str == NULL ) {
-	    NanReturnValue(NanUndefined());
-	} else {
-        NanReturnValue(NanNew<v8::String>( g_value_get_string (&b) ));
-    }
+	if( str == NULL ) return NanUndefined();
+	return NanNew<v8::String>( g_value_get_string (&b) );
 }
 
 void v8_to_gvalue( v8::Handle<v8::Value> v, GValue *gv ) {
@@ -129,13 +114,13 @@ void v8_to_gvalue( v8::Handle<v8::Value> v, GValue *gv ) {
 gboolean gst_structure_to_v8_value_iterate( GQuark field_id, const GValue *val, gpointer user_data ) {
 	v8::Handle<v8::Object> *obj = (v8::Handle<v8::Object>*)user_data;
 	v8::Handle<v8::Value> v = gvalue_to_v8( val );
-	(*obj)->Set(v8::String::NewSymbol((const char *)g_quark_to_string(field_id)), v );
+	(*obj)->Set(NanNew<v8::String>((const char *)g_quark_to_string(field_id)), v );
 	return true;
 }
 
 v8::Handle<v8::Object> gst_structure_to_v8( v8::Handle<v8::Object> obj, GstStructure *struc ) {
 	const gchar *name = gst_structure_get_name(struc);
-	obj->Set(v8::String::NewSymbol("name"), v8::String::New( name ) );
+	obj->Set(NanNew<v8::String>("name"), NanNew<v8::String>( name ) );
 	gst_structure_foreach( struc, gst_structure_to_v8_value_iterate, &obj );
 	return obj;
 }
@@ -160,17 +145,17 @@ class GObjectWrap : public node::ObjectWrap {
 		GObject *obj;
 		
 		static v8::Persistent<v8::Function> constructor;
-		static v8::Handle<v8::Value> New(const v8::Arguments& args);
-		static v8::Handle<v8::Value> _get(const v8::Arguments& args);
-		static v8::Handle<v8::Value> _set(const v8::Arguments& args);
-		static v8::Handle<v8::Value> _play(const v8::Arguments& args);
-		static v8::Handle<v8::Value> _pause(const v8::Arguments& args);
-		static v8::Handle<v8::Value> _stop(const v8::Arguments& args);
+		static NAN_METHOD(New);
+		static NAN_METHOD(_get);
+		static NAN_METHOD(_set);
+		static NAN_METHOD(_play);
+		static NAN_METHOD(_pause);
+		static NAN_METHOD(_stop);
 
 //		static v8::Handle<v8::Value> _onBufferAvailable(const v8::Arguments& args);
 		static void _doPullBuffer( uv_work_t *req );
 		static void _pulledBuffer( uv_work_t *req, int );
-		static v8::Handle<v8::Value> _pull(const v8::Arguments& args);
+		static NAN_METHOD(_pull);
 };
 
 v8::Persistent<v8::Function> GObjectWrap::constructor;
@@ -183,31 +168,29 @@ GObjectWrap::~GObjectWrap() {
 
 void GObjectWrap::Init() {
 	v8::Local<v8::FunctionTemplate> tpl = v8::FunctionTemplate::New(New);
-	tpl->SetClassName(v8::String::NewSymbol("GObjectWrap"));
+	tpl->SetClassName(NanNew<v8::String>("GObjectWrap"));
 	tpl->InstanceTemplate()->SetInternalFieldCount(1);
 	// Prototype
-	tpl->PrototypeTemplate()->Set(v8::String::NewSymbol("get"),
-	  v8::FunctionTemplate::New(_get)->GetFunction());
-	tpl->PrototypeTemplate()->Set(v8::String::NewSymbol("set"),
-	  v8::FunctionTemplate::New(_set)->GetFunction());
+	tpl->PrototypeTemplate()->Set(NanNew<v8::String>("get"),
+			NanNew<v8::FunctionTemplate>(_get)->GetFunction());
+	tpl->PrototypeTemplate()->Set(NanNew<v8::String>("set"),
+			NanNew<v8::FunctionTemplate>(_set)->GetFunction());
 
-	tpl->PrototypeTemplate()->Set(v8::String::NewSymbol("pull"),
-	  v8::FunctionTemplate::New(_pull)->GetFunction());
+	tpl->PrototypeTemplate()->Set(NanNew<v8::String>("pull"),
+			NanNew<v8::FunctionTemplate>(_pull)->GetFunction());
 
 	constructor = v8::Persistent<v8::Function>::New(tpl->GetFunction());
 }
 
-v8::Handle<v8::Value> GObjectWrap::New(const v8::Arguments& args) {
- 	v8::HandleScope scope;
-
+NAN_METHOD(GObjectWrap::New) {
   	GObjectWrap* obj = new GObjectWrap();
 	obj->Wrap(args.This());
 
-	return args.This();
+	NanReturnValue(args.This());
 }
 
 v8::Handle<v8::Value> GObjectWrap::NewInstance( const v8::Arguments& args, GObject *obj ) {
-	v8::HandleScope scope;
+	NanEscapableScope();
 	const unsigned argc = 1;
 	v8::Handle<v8::Value> argv[argc] = { args[0] };
 	v8::Local<v8::Object> instance = constructor->NewInstance(argc, argv);
@@ -215,11 +198,11 @@ v8::Handle<v8::Value> GObjectWrap::NewInstance( const v8::Arguments& args, GObje
 	GObjectWrap* wrap = ObjectWrap::Unwrap<GObjectWrap>(instance);
   	wrap->obj = obj;
 
-  	return scope.Close(instance);
+  	NanEscapeScope(instance);
 }
 
-v8::Handle<v8::Value> GObjectWrap::_get(const v8::Arguments& args) {
-	v8::HandleScope scope;
+NAN_METHOD(GObjectWrap::_get) {
+	NanEscapableScope();
 	GObjectWrap* obj = ObjectWrap::Unwrap<GObjectWrap>(args.This());
 
 	v8::Local<v8::String> nameString = args[0]->ToString();
@@ -228,11 +211,12 @@ v8::Handle<v8::Value> GObjectWrap::_get(const v8::Arguments& args) {
 	GObject *o = obj->obj;
     GParamSpec *spec = g_object_class_find_property( G_OBJECT_GET_CLASS(o), *name );
     if( !spec ) {
-		return v8::ThrowException( v8::Exception::ReferenceError(
-				v8::String::Concat(
-					v8::String::New("No such GObject property: "),
-					nameString
-				)));
+		NanThrowError(v8::String::Concat(
+				NanNew<v8::String>("No such GObject property: "),
+				nameString
+		));
+		NanEscapeScope(NanUndefined());
+		return;
     }
 
     GValue gv;
@@ -240,17 +224,16 @@ v8::Handle<v8::Value> GObjectWrap::_get(const v8::Arguments& args) {
     g_value_init( &gv, G_PARAM_SPEC_VALUE_TYPE(spec) );
     g_object_get_property( o, *name, &gv );
         
-    return scope.Close( gvalue_to_v8( &gv ) );
+    NanEscapeScope( gvalue_to_v8( &gv ) );
 }
 
 void GObjectWrap::set( const char *name, const v8::Handle<v8::Value> value ) {
 	GParamSpec *spec = g_object_class_find_property( G_OBJECT_GET_CLASS(obj), name );
 	if( !spec ) {
-		v8::ThrowException( v8::Exception::ReferenceError(
-				v8::String::Concat(
-					v8::String::New("No such GObject property: "),
-					v8::String::New( name )
-				)));
+		NanThrowError(v8::String::Concat(
+				NanNew<v8::String>("No such GObject property: "),
+				NanNew<v8::String>(name)
+		));
 		return;
 	}
 
@@ -273,8 +256,8 @@ void GObjectWrap::pause() {
 }
 
 
-v8::Handle<v8::Value> GObjectWrap::_set(const v8::Arguments& args) {
-	v8::HandleScope scope;
+NAN_METHOD(GObjectWrap::_set) {
+	NanEscapableScope();
 	GObjectWrap* obj = ObjectWrap::Unwrap<GObjectWrap>(args.This());
 
 	if( args[0]->IsString() ) {
@@ -294,28 +277,30 @@ v8::Handle<v8::Value> GObjectWrap::_set(const v8::Arguments& args) {
 		}		
 	
 	} else {
-		return v8::ThrowException( v8::Exception::TypeError(v8::String::New("set expects name,value or object")) );
-	}        
-    return scope.Close( args[1] );
+		NanThrowTypeError("set expects name,value or object");
+		NanEscapeScope(NanUndefined());
+		return;
+	}
+	NanEscapeScope( args[1] );
 }
 
-v8::Handle<v8::Value> GObjectWrap::_play(const v8::Arguments& args) {
-	v8::HandleScope scope;
+NAN_METHOD(GObjectWrap::_play) {
+	NanEscapableScope();
 	GObjectWrap* obj = ObjectWrap::Unwrap<GObjectWrap>(args.This());
 	obj->play();
-	return scope.Close( v8::True() );
+	NanEscapeScope(NanTrue());
 }
-v8::Handle<v8::Value> GObjectWrap::_pause(const v8::Arguments& args) {
-	v8::HandleScope scope;
+NAN_METHOD(GObjectWrap::_pause) {
+	NanEscapableScope();
 	GObjectWrap* obj = ObjectWrap::Unwrap<GObjectWrap>(args.This());
 	obj->pause();
-	return scope.Close( v8::True() );
+	NanEscapeScope(NanTrue());
 }
-v8::Handle<v8::Value> GObjectWrap::_stop(const v8::Arguments& args) {
-	v8::HandleScope scope;
+NAN_METHOD(GObjectWrap::_stop) {
+	NanEscapableScope();
 	GObjectWrap* obj = ObjectWrap::Unwrap<GObjectWrap>(args.This());
 	obj->stop();
-	return scope.Close( v8::True() );
+	NanEscapeScope(NanTrue());
 }
 
 struct SampleRequest {
@@ -337,7 +322,7 @@ void GObjectWrap::_pulledBuffer( uv_work_t *req, int n ) {
 	SampleRequest *br = static_cast<SampleRequest*>(req->data);
 	
 	if( br->sample ) {
-		v8::HandleScope scope;
+		NanEscapableScope();
 /* FIXME
 		GstCaps *caps = gst_buffer_get_caps (br->buffer); 
 		if( caps && !gst_caps_is_equal( caps, br->caps )) {
@@ -362,24 +347,26 @@ void GObjectWrap::_pulledBuffer( uv_work_t *req, int n ) {
 		gst_sample_unref(br->sample);
 		br->sample = NULL;
 		
-		scope.Close( v8::Undefined() );
+		NanEscapeScope(NanUndefined());
 	}
 
 	uv_queue_work( uv_default_loop(), &br->request, _doPullBuffer, _pulledBuffer );
 }
 
-v8::Handle<v8::Value> GObjectWrap::_pull( const v8::Arguments& args ) {
-	v8::HandleScope scope;
+NAN_METHOD(GObjectWrap::_pull) {
+	NanEscapableScope();
 	GObjectWrap* obj = ObjectWrap::Unwrap<GObjectWrap>(args.This());
 
 	if( args.Length() < 2 || !args[0]->IsFunction() || !args[1]->IsFunction() ) {
-		return scope.Close(v8::ThrowException(
-			v8::Exception::Error(v8::String::New("Callbacks are required and must be Functions."))
-		));
+		NanThrowError("Callbacks are required and must be Functions.");
+		NanEscapeScope(NanUndefined());
+		return;
 	}
   
     if( !GST_IS_APP_SINK( obj->obj ) ) {
-		return scope.Close(v8::ThrowException( v8::Exception::TypeError(v8::String::New("not a GstAppSink")) ));
+		NanThrowError("not a GstAppSink");
+		NanEscapeScope(NanUndefined());
+		return;
     }
 
 	v8::Handle<v8::Function> cb_buffer = v8::Handle<v8::Function>::Cast(args[0]);
@@ -394,7 +381,7 @@ v8::Handle<v8::Value> GObjectWrap::_pull( const v8::Arguments& args ) {
 	
 	uv_queue_work( uv_default_loop(), &br->request, _doPullBuffer, _pulledBuffer );
 
-	return scope.Close( v8::Undefined() );	
+	NanEscapeScope(NanUndefined());
 }
 
 
@@ -416,16 +403,16 @@ class Pipeline : public node::ObjectWrap {
 		
 		GstBin *pipeline;
 		
-		static v8::Handle<v8::Value> New(const v8::Arguments& args);
-		static v8::Handle<v8::Value> _play(const v8::Arguments& args);
-		static v8::Handle<v8::Value> _pause(const v8::Arguments& args);
-		static v8::Handle<v8::Value> _stop(const v8::Arguments& args);
-		static v8::Handle<v8::Value> _forceKeyUnit(const v8::Arguments& args);
-		static v8::Handle<v8::Value> _findChild(const v8::Arguments& args);
+		static NAN_METHOD(New);
+		static NAN_METHOD(_play);
+		static NAN_METHOD(_pause);
+		static NAN_METHOD(_stop);
+		static NAN_METHOD(_forceKeyUnit);
+		static NAN_METHOD(_findChild);
 
 		static void _doPollBus( uv_work_t *req );
 		static void _polledBus( uv_work_t *req, int );
-		static v8::Handle<v8::Value> _pollBus(const v8::Arguments& args);
+		static NAN_METHOD(_pollBus);
 		
 };
 
@@ -435,7 +422,7 @@ Pipeline::Pipeline( const char *launch ) {
 	pipeline = GST_BIN(gst_parse_launch(launch, &err));
 	if( err ) {
 		fprintf(stderr,"GstError: %s\n", err->message );
-		v8::ThrowException( v8::String::New(err->message) );
+		NanThrowError(err->message);
 	}
 }
 
@@ -485,8 +472,8 @@ void Pipeline::_polledBus( uv_work_t *req, int n ) {
 
 	if( br->msg ) {
 //		printf("Got Bus Message type %s\n", GST_MESSAGE_TYPE_NAME(msg) );
-		v8::Local<v8::Object> m = v8::Object::New();
-		m->Set(v8::String::NewSymbol("type"), v8::String::New(GST_MESSAGE_TYPE_NAME(br->msg)) );
+		v8::Local<v8::Object> m = NanNew<v8::Object>();
+		m->Set(NanNew<v8::String>("type"), NanNew<v8::String>(GST_MESSAGE_TYPE_NAME(br->msg)) );
 /*	
         if( br->msg->structure ) {
             gst_structure_to_v8( m, br->msg->structure );
@@ -496,9 +483,9 @@ void Pipeline::_polledBus( uv_work_t *req, int n ) {
 			GError *err = NULL;
 			gchar *name;
 			name = gst_object_get_path_string (br->msg->src);
-			m->Set(v8::String::NewSymbol("name"), v8::String::New( name ) );
+			m->Set(NanNew<v8::String>("name"), NanNew<v8::String>( name ) );
 			gst_message_parse_error (br->msg, &err, NULL);
-			m->Set(v8::String::NewSymbol("message"), v8::String::New( err->message) );
+			m->Set(NanNew<v8::String>("message"), NanNew<v8::String>( err->message) );
 		}
 
 		v8::Local<v8::Value> argv[1] = { m };
@@ -510,14 +497,14 @@ void Pipeline::_polledBus( uv_work_t *req, int n ) {
 	uv_queue_work( uv_default_loop(), &br->request, _doPollBus, _polledBus );
 }
 
-v8::Handle<v8::Value> Pipeline::_pollBus( const v8::Arguments& args ) {
-	v8::HandleScope scope;
+NAN_METHOD(Pipeline::_pollBus) {
+	NanEscapableScope();
 	Pipeline* obj = ObjectWrap::Unwrap<Pipeline>(args.This());
 
 	if( args.Length() == 0 || !args[0]->IsFunction() ) {
-		return scope.Close(v8::ThrowException(
-			v8::Exception::Error(v8::String::New("Callback is required and must be a Function."))
-		));
+		NanThrowError("Callback is required and must be a Function.");
+		NanEscapeScope(NanUndefined());
+		return;
 	}
   
 
@@ -530,81 +517,82 @@ v8::Handle<v8::Value> Pipeline::_pollBus( const v8::Arguments& args ) {
 	obj->Ref();
 	
 	uv_queue_work( uv_default_loop(), &br->request, _doPollBus, _polledBus );
-
-	return scope.Close( v8::Undefined() );	
+	NanEscapeScope(NanUndefined());
 }
 
 
 
 void Pipeline::Init( v8::Handle<v8::Object> exports ) {
-	v8::Local<v8::FunctionTemplate> tpl = v8::FunctionTemplate::New(New);
-	tpl->SetClassName(v8::String::NewSymbol("Pipeline"));
+	v8::Local<v8::FunctionTemplate> tpl = NanNew<v8::FunctionTemplate>(New);
+	tpl->SetClassName(NanNew<v8::String>("Pipeline"));
 	tpl->InstanceTemplate()->SetInternalFieldCount(1);
 	// Prototype
-	tpl->PrototypeTemplate()->Set(v8::String::NewSymbol("play"),
-	  v8::FunctionTemplate::New(_play)->GetFunction());
-	tpl->PrototypeTemplate()->Set(v8::String::NewSymbol("pause"),
-	  v8::FunctionTemplate::New(_pause)->GetFunction());
-	tpl->PrototypeTemplate()->Set(v8::String::NewSymbol("stop"),
-	  v8::FunctionTemplate::New(_stop)->GetFunction());
-	tpl->PrototypeTemplate()->Set(v8::String::NewSymbol("forceKeyUnit"),
-	  v8::FunctionTemplate::New(_forceKeyUnit)->GetFunction());
-	tpl->PrototypeTemplate()->Set(v8::String::NewSymbol("findChild"),
-	  v8::FunctionTemplate::New(_findChild)->GetFunction());
-	tpl->PrototypeTemplate()->Set(v8::String::NewSymbol("pollBus"),
-	  v8::FunctionTemplate::New(_pollBus)->GetFunction());
+	tpl->PrototypeTemplate()->Set(NanNew<v8::String>("play"),
+			NanNew<v8::FunctionTemplate>(_play)->GetFunction());
+	tpl->PrototypeTemplate()->Set(NanNew<v8::String>("pause"),
+			NanNew<v8::FunctionTemplate>(_pause)->GetFunction());
+	tpl->PrototypeTemplate()->Set(NanNew<v8::String>("stop"),
+			NanNew<v8::FunctionTemplate>(_stop)->GetFunction());
+	tpl->PrototypeTemplate()->Set(NanNew<v8::String>("forceKeyUnit"),
+			NanNew<v8::FunctionTemplate>(_forceKeyUnit)->GetFunction());
+	tpl->PrototypeTemplate()->Set(NanNew<v8::String>("findChild"),
+			NanNew<v8::FunctionTemplate>(_findChild)->GetFunction());
+	tpl->PrototypeTemplate()->Set(NanNew<v8::String>("pollBus"),
+			NanNew<v8::FunctionTemplate>(_pollBus)->GetFunction());
 
 	v8::Persistent<v8::Function> constructor = v8::Persistent<v8::Function>::New(tpl->GetFunction());
-	exports->Set(v8::String::NewSymbol("Pipeline"), constructor);
+	exports->Set(NanNew<v8::String>("Pipeline"), constructor);
 }
 
-v8::Handle<v8::Value> Pipeline::New(const v8::Arguments& args) {
-	v8::HandleScope scope;
+NAN_METHOD(Pipeline::New) {
+	NanEscapableScope();
 
 	v8::String::Utf8Value launch( args[0]->ToString() );
 
 	Pipeline* obj = new Pipeline( *launch );
 	obj->Wrap(args.This());
 
-	return args.This();
+	NanEscapeScope(args.This());
 }
 
-v8::Handle<v8::Value> Pipeline::_play(const v8::Arguments& args) {
-	v8::HandleScope scope;
+NAN_METHOD(Pipeline::_play) {
+	NanEscapableScope();
 	Pipeline* obj = ObjectWrap::Unwrap<Pipeline>(args.This());
 	obj->play();
-	return scope.Close( v8::True() );
+	NanEscapeScope(NanNew<v8::True>());
 }
-v8::Handle<v8::Value> Pipeline::_pause(const v8::Arguments& args) {
-	v8::HandleScope scope;
+NAN_METHOD(Pipeline::_pause) {
+	NanEscapableScope();
 	Pipeline* obj = ObjectWrap::Unwrap<Pipeline>(args.This());
 	obj->pause();
-	return scope.Close( v8::True() );
+	NanEscapeScope(NanNew<v8::True>());
 }
-v8::Handle<v8::Value> Pipeline::_stop(const v8::Arguments& args) {
-	v8::HandleScope scope;
+NAN_METHOD(Pipeline::_stop) {
+	NanEscapableScope();
 	Pipeline* obj = ObjectWrap::Unwrap<Pipeline>(args.This());
 	obj->stop();
-	return scope.Close( v8::True() );
+	NanEscapeScope(NanNew<v8::True>());
 }
-v8::Handle<v8::Value> Pipeline::_forceKeyUnit(const v8::Arguments& args) {
-	v8::HandleScope scope;
+NAN_METHOD(Pipeline::_forceKeyUnit) {
+	NanEscapableScope();
 	Pipeline* obj = ObjectWrap::Unwrap<Pipeline>(args.This());
 	v8::String::Utf8Value name( args[0]->ToString() );
 	GObject *o = obj->findChild( *name );
 	int cnt( args[1]->Int32Value() );
 	obj->forceKeyUnit( o, cnt );
-	return scope.Close( v8::True() );
+	NanEscapeScope(NanNew<v8::True>());
 }
-v8::Handle<v8::Value> Pipeline::_findChild(const v8::Arguments& args) {
-	v8::HandleScope scope;
+NAN_METHOD(Pipeline::_findChild) {
+	NanEscapableScope();
 	Pipeline* obj = ObjectWrap::Unwrap<Pipeline>(args.This());
 
 	v8::String::Utf8Value name( args[0]->ToString() );
 	GObject *o = obj->findChild( *name );
-	if( o ) return scope.Close( GObjectWrap::NewInstance( args, o ) );
-
-	return scope.Close( v8::Undefined() );
+	if ( o ) {
+		NanEscapeScope( GObjectWrap::NewInstance( args, o ) );
+	} else {
+		NanEscapeScope(NanUndefined());
+	}
 }
 
 void init( v8::Handle<v8::Object> exports ) {
@@ -613,4 +601,4 @@ void init( v8::Handle<v8::Object> exports ) {
 	Pipeline::Init(exports);
 }
 
-NODE_MODULE(gstreamer_superficial, init)
+NODE_MODULE(gstreamer_superficial, init);
