@@ -130,7 +130,7 @@ v8::Handle<v8::Object> gst_structure_to_v8( v8::Handle<v8::Object> obj, GstStruc
 class GObjectWrap : public node::ObjectWrap {
 	public:
 		static void Init();
-		static v8::Handle<v8::Value> NewInstance( const v8::Arguments& args, GObject *obj );
+		static v8::Handle<v8::Value> NewInstance( const v8::FunctionCallbackInfo<v8::Value>& args, GObject *obj );
 
 		void set( const char *name, const v8::Handle<v8::Value> value );
 
@@ -167,7 +167,7 @@ GObjectWrap::~GObjectWrap() {
 }
 
 void GObjectWrap::Init() {
-	v8::Local<v8::FunctionTemplate> tpl = v8::FunctionTemplate::New(New);
+	v8::Local<v8::FunctionTemplate> tpl = NanNew<v8::FunctionTemplate>(New);
 	tpl->SetClassName(NanNew<v8::String>("GObjectWrap"));
 	tpl->InstanceTemplate()->SetInternalFieldCount(1);
 	// Prototype
@@ -179,7 +179,7 @@ void GObjectWrap::Init() {
 	tpl->PrototypeTemplate()->Set(NanNew<v8::String>("pull"),
 			NanNew<v8::FunctionTemplate>(_pull)->GetFunction());
 
-	constructor = v8::Persistent<v8::Function>::New(tpl->GetFunction());
+	NanAssignPersistent(constructor, tpl->GetFunction());
 }
 
 NAN_METHOD(GObjectWrap::New) {
@@ -189,11 +189,12 @@ NAN_METHOD(GObjectWrap::New) {
 	NanReturnValue(args.This());
 }
 
-v8::Handle<v8::Value> GObjectWrap::NewInstance( const v8::Arguments& args, GObject *obj ) {
+v8::Handle<v8::Value> GObjectWrap::NewInstance( const v8::FunctionCallbackInfo<v8::Value>& args, GObject *obj ) {
 	NanEscapableScope();
 	const unsigned argc = 1;
+	v8::Local<v8::Function> constructorLocal = NanNew(constructor);
 	v8::Handle<v8::Value> argv[argc] = { args[0] };
-	v8::Local<v8::Object> instance = constructor->NewInstance(argc, argv);
+	v8::Local<v8::Object> instance = constructorLocal->NewInstance(argc, argv);
 
 	GObjectWrap* wrap = ObjectWrap::Unwrap<GObjectWrap>(instance);
   	wrap->obj = obj;
@@ -342,7 +343,10 @@ void GObjectWrap::_pulledBuffer( uv_work_t *req, int n ) {
 		v8::Handle<v8::Value> buf = gstsample_to_v8( br->sample );
 		
 		v8::Handle<v8::Value> argv[1] = { buf };
-		br->cb_buffer->Call(v8::Context::GetCurrent()->Global(), 1, argv);
+
+		v8::Local<v8::Function> cbBufferLocal = NanNew(br->cb_buffer);
+
+		cbBufferLocal->Call(NanGetCurrentContext()->Global(), 1, argv);
 
 		gst_sample_unref(br->sample);
 		br->sample = NULL;
@@ -371,11 +375,11 @@ NAN_METHOD(GObjectWrap::_pull) {
 
 	v8::Handle<v8::Function> cb_buffer = v8::Handle<v8::Function>::Cast(args[0]);
 	v8::Handle<v8::Function> cb_caps = v8::Handle<v8::Function>::Cast(args[1]);
-	
+
 	SampleRequest * br = new SampleRequest();
 	br->request.data = br;
-	br->cb_buffer = v8::Persistent<v8::Function>::New( cb_buffer );
-	br->cb_caps = v8::Persistent<v8::Function>::New( cb_caps );
+	NanAssignPersistent(br->cb_buffer, cb_buffer);
+	NanAssignPersistent(br->cb_caps, cb_caps);
 	br->obj = obj;
 	obj->Ref();
 	
@@ -489,7 +493,8 @@ void Pipeline::_polledBus( uv_work_t *req, int n ) {
 		}
 
 		v8::Local<v8::Value> argv[1] = { m };
-		br->callback->Call(v8::Context::GetCurrent()->Global(), 1, argv);
+		v8::Local<v8::Function> cbCallbackLocal = NanNew(br->callback);
+		cbCallbackLocal->Call(NanGetCurrentContext()->Global(), 1, argv);
 		
 		gst_message_unref( br->msg );
 	}
@@ -512,7 +517,7 @@ NAN_METHOD(Pipeline::_pollBus) {
 	
 	BusRequest * br = new BusRequest();
 	br->request.data = br;
-	br->callback = v8::Persistent<v8::Function>::New( callback );
+	NanAssignPersistent(br->callback, callback);
 	br->obj = obj;
 	obj->Ref();
 	
@@ -540,7 +545,11 @@ void Pipeline::Init( v8::Handle<v8::Object> exports ) {
 	tpl->PrototypeTemplate()->Set(NanNew<v8::String>("pollBus"),
 			NanNew<v8::FunctionTemplate>(_pollBus)->GetFunction());
 
-	v8::Persistent<v8::Function> constructor = v8::Persistent<v8::Function>::New(tpl->GetFunction());
+	v8::Persistent<v8::Function> constructorPersist;
+	NanAssignPersistent(constructorPersist, tpl->GetFunction());
+
+	v8::Local<v8::Function> constructor = NanNew(constructorPersist);
+
 	exports->Set(NanNew<v8::String>("Pipeline"), constructor);
 }
 
@@ -559,19 +568,19 @@ NAN_METHOD(Pipeline::_play) {
 	NanEscapableScope();
 	Pipeline* obj = ObjectWrap::Unwrap<Pipeline>(args.This());
 	obj->play();
-	NanEscapeScope(NanNew<v8::True>());
+	NanEscapeScope(NanTrue());
 }
 NAN_METHOD(Pipeline::_pause) {
 	NanEscapableScope();
 	Pipeline* obj = ObjectWrap::Unwrap<Pipeline>(args.This());
 	obj->pause();
-	NanEscapeScope(NanNew<v8::True>());
+	NanEscapeScope(NanTrue());
 }
 NAN_METHOD(Pipeline::_stop) {
 	NanEscapableScope();
 	Pipeline* obj = ObjectWrap::Unwrap<Pipeline>(args.This());
 	obj->stop();
-	NanEscapeScope(NanNew<v8::True>());
+	NanEscapeScope(NanTrue());
 }
 NAN_METHOD(Pipeline::_forceKeyUnit) {
 	NanEscapableScope();
@@ -580,7 +589,7 @@ NAN_METHOD(Pipeline::_forceKeyUnit) {
 	GObject *o = obj->findChild( *name );
 	int cnt( args[1]->Int32Value() );
 	obj->forceKeyUnit( o, cnt );
-	NanEscapeScope(NanNew<v8::True>());
+	NanEscapeScope(NanTrue());
 }
 NAN_METHOD(Pipeline::_findChild) {
 	NanEscapableScope();
