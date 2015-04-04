@@ -198,8 +198,9 @@ v8::Handle<v8::Value> GObjectWrap::NewInstance( const v8::FunctionCallbackInfo<v
 
 	GObjectWrap* wrap = ObjectWrap::Unwrap<GObjectWrap>(instance);
   	wrap->obj = obj;
-
-  	NanEscapeScope(instance);
+	
+  	args.GetReturnValue().Set(instance);
+  	return NanEscapeScope(instance);
 }
 
 NAN_METHOD(GObjectWrap::_get) {
@@ -447,7 +448,6 @@ void Pipeline::pause() {
 
 void Pipeline::forceKeyUnit(GObject *sink, int cnt) {
     GstPad *sinkpad = gst_element_get_static_pad (GST_ELEMENT(sink), "sink");
-    printf("force key unit %d\n", cnt);
     gst_pad_push_event (sinkpad, (GstEvent*) gst_video_event_new_upstream_force_key_unit(GST_CLOCK_TIME_NONE, TRUE, cnt));
 }
 
@@ -524,8 +524,6 @@ NAN_METHOD(Pipeline::_pollBus) {
 	uv_queue_work( uv_default_loop(), &br->request, _doPollBus, _polledBus );
 	NanEscapeScope(NanUndefined());
 }
-
-
 
 void Pipeline::Init( v8::Handle<v8::Object> exports ) {
 	v8::Local<v8::FunctionTemplate> tpl = NanNew<v8::FunctionTemplate>(New);
