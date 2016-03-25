@@ -69,7 +69,7 @@ appsink.pull( function(buf) {
 
 ### A simple Ogg/Theora streaming server
 
-is implemented in examples/streaming, just run server.js (requires express) and point your browser to http://localhost:8001. (Tested only with Chromium). This handles retaining the streamheader to feed first to every newly connected client.
+is broken, but was once working as implemented in examples/streaming; run server.js (requires express) and point your browser to http://localhost:8001. (Tested only with Chromium). This handles retaining the streamheader to feed first to every newly connected client.
 
 
 ## Who?
