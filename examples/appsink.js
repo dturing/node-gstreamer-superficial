@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-var gstreamer = require('gstreamer-superficial');
+var gstreamer = require('..');
 
 var pipeline = new gstreamer.Pipeline("videotestsrc ! appsink name=sink");
 var appsink = pipeline.findChild("sink");

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 var util = require("util");
-var gstreamer = require('gstreamer-superficial');
+var gstreamer = require('..');
 
 var pipeline = new gstreamer.Pipeline("videotestsrc num-buffers=60 ! autovideosink");
 
