@@ -217,35 +217,3 @@ NAN_METHOD(GObjectWrap::_pull) {
 			br->cb_caps->Call(v8::Context::GetCurrent()->Global(), 1, argv);
 		}
 */
-
-NAN_METHOD(GObjectWrap::_pull) {
-	Nan::EscapableHandleScope scope;
-	GObjectWrap* obj = Nan::ObjectWrap::Unwrap<GObjectWrap>(info.This());
-
-	if( info.Length() < 2 || !info[0]->IsFunction() || !info[1]->IsFunction() ) {
-		Nan::ThrowError("Callbacks are required and must be Functions.");
-		scope.Escape(Nan::Undefined());
-		return;
-	}
-  
-    if( !GST_IS_APP_SINK( obj->obj ) ) {
-		Nan::ThrowError("not a GstAppSink");
-		scope.Escape(Nan::Undefined());
-		return;
-    }
-
-	v8::Handle<v8::Function> cb_buffer = v8::Handle<v8::Function>::Cast(info[0]);
-	v8::Handle<v8::Function> cb_caps = v8::Handle<v8::Function>::Cast(info[1]);
-
-	SampleRequest * br = new SampleRequest();
-	br->request.data = br;
-	br->cb_buffer.Reset(cb_buffer);
-	br->cb_caps.Reset(cb_caps);
-	br->obj = obj;
-	obj->Ref();
-	
-	uv_queue_work( uv_default_loop(), &br->request, _doPullBuffer, _pulledBuffer );
-
-	scope.Escape(Nan::Undefined());
-}
-*/

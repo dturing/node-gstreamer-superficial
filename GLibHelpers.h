@@ -1,5 +1,5 @@
 #ifndef __GLibHelpers_h__
-#define __GlibHelpers_h__
+#define __GLibHelpers_h__
 
 #include <nan.h>
 #include <gst/gst.h>
