@@ -1,13 +1,21 @@
 #!/usr/bin/env node
-var gstreamer = require('..');
+var gstreamer = require("..");
 
-var pipeline = new gstreamer.Pipeline("videotestsrc ! appsink name=sink");
+var pipeline = new gstreamer.Pipeline("videotestsrc num-buffers=15 ! appsink name=sink");
 var appsink = pipeline.findChild("sink");
 
-appsink.pull( function(buf) {
-	console.log("BUFFER size",buf.length);
-}, function(caps) {
-	console.log("CAPS",caps);
-} );
+var pull = function() {
+    appsink.pull(function(buf) {
+        if (buf) {
+            console.log("BUFFER size",buf.length);
+            pull();
+        } else {
+            console.log("NULL BUFFER");
+            setTimeout(pull, 500);
+        }
+    });
+};
 
 pipeline.play();
+
+pull();

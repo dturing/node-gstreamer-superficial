@@ -154,27 +154,54 @@ NAN_METHOD(GObjectWrap::_stop) {
 	scope.Escape(Nan::True());
 }
 
-struct SampleRequest {
-	uv_work_t request;
-	Nan::Persistent<v8::Function> cb_buffer, cb_caps;
-	GstSample *sample;
-	GstCaps *caps;
-	GObjectWrap *obj;
+class PullWorker : public Nan::AsyncWorker {
+	public:
+		PullWorker(Nan::Callback *callback, GstAppSink *appsink)
+		: AsyncWorker(callback), appsink(appsink) {};
+
+		~PullWorker() {}
+
+		void Execute() {
+			sample = gst_app_sink_pull_sample(appsink);
+		}
+
+		void HandleOKCallback() {
+			Nan::HandleScope scope;
+
+			v8::Local<v8::Value> buf;
+			if (sample) {
+				buf = gstsample_to_v8( sample );
+				gst_sample_unref(sample);
+				sample = NULL;
+			} else {
+				buf =  Nan::Null();
+			}
+
+			v8::Local<v8::Value> argv[] = { buf };
+			callback->Call(1, argv);
+		}
+
+	private:
+		GstAppSink *appsink;
+		GstSample *sample;
 };
 
-void GObjectWrap::_doPullBuffer( uv_work_t *req ) {
-	SampleRequest *br = static_cast<SampleRequest*>(req->data);
+NAN_METHOD(GObjectWrap::_pull) {
+	Nan::EscapableHandleScope scope;
+	GObjectWrap* obj = Nan::ObjectWrap::Unwrap<GObjectWrap>(info.This());
 
-	GstAppSink *sink = GST_APP_SINK(br->obj->obj);
-	br->sample = gst_app_sink_pull_sample( sink );
+    if( !GST_IS_APP_SINK( obj->obj ) ) {
+		Nan::ThrowError("not a GstAppSink");
+		scope.Escape(Nan::Undefined());
+		return;
+    }
+
+    Nan::Callback *callback = new Nan::Callback(info[0].As<v8::Function>());
+
+    AsyncQueueWorker(new PullWorker(callback, GST_APP_SINK(obj->obj)));
 }
 
-void GObjectWrap::_pulledBuffer( uv_work_t *req, int n ) {
-	SampleRequest *br = static_cast<SampleRequest*>(req->data);
-
-	if( br->sample ) {
-		Nan::HandleScope scope;
-/* FIXME
+/* FIXME, maybe, if we want to transfer caps...
 		GstCaps *caps = gst_buffer_get_caps (br->buffer); 
 		if( caps && !gst_caps_is_equal( caps, br->caps )) {
 			br->caps = caps;
@@ -190,23 +217,6 @@ void GObjectWrap::_pulledBuffer( uv_work_t *req, int n ) {
 			br->cb_caps->Call(v8::Context::GetCurrent()->Global(), 1, argv);
 		}
 */
-		v8::Handle<v8::Value> buf = gstsample_to_v8( br->sample );
-		
-		
-		v8::Handle<v8::Value> argv[1] = { buf };
-
-		v8::Local<v8::Function> cbBufferLocal = Nan::New(br->cb_buffer);
-
-		cbBufferLocal->Call(Nan::GetCurrentContext()->Global(), 1, argv);
-
-		gst_sample_unref(br->sample);
-		br->sample = NULL;
-		
-		return;
-	}
-
-	uv_queue_work( uv_default_loop(), &br->request, _doPullBuffer, _pulledBuffer );
-}
 
 NAN_METHOD(GObjectWrap::_pull) {
 	Nan::EscapableHandleScope scope;
@@ -238,3 +248,4 @@ NAN_METHOD(GObjectWrap::_pull) {
 
 	scope.Escape(Nan::Undefined());
 }
+*/

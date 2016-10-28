@@ -31,9 +31,10 @@ class GObjectWrap : public Nan::ObjectWrap {
 		static NAN_METHOD(_pause);
 		static NAN_METHOD(_stop);
 
-//		static v8::Handle<v8::Value> _onBufferAvailable(const v8::Arguments& info);
+/*
 		static void _doPullBuffer( uv_work_t *req );
 		static void _pulledBuffer( uv_work_t *req, int );
+		*/
 		static NAN_METHOD(_pull);
 };
 
