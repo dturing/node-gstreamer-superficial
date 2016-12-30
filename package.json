@@ -1,6 +1,6 @@
 {
-  "name": "gstreamer-superficial",
-  "version": "0.0.2",
+  "name": "@skyrising/gstreamer-superficial",
+  "version": "1.0.0",
   "description": "Superficial GStreamer binding",
   "author": {
     "name": "Daniel Turing",
@@ -10,10 +10,16 @@
   "main": "./build/Release/gstreamer-superficial",
   "repository": {
     "type": "git",
-    "url": "git@github.com:dturing/node-gstreamer-superficial.git"
+    "url": "git@github.com:skyrising/node-gstreamer-superficial.git"
   },
   "maintainers": [],
-  "contributors": [],
+  "contributors": [
+    {
+      "name": "Simon Wanner",
+      "email": "skyrising@pvpctutorials.de",
+      "url": "https://pvpctutorials.de"
+    }
+  ],
   "dependencies": {},
   "devDependencies": {
     "express": "^4.14.0",
@@ -31,8 +37,6 @@
   "readme": "You shouldn't've read me.",
   "readmeFilename": "README.md",
   "bugs": {
-    "url": "https://github.com/dturing/node-gstreamer-superficial/issues"
-  },
-  "_id": "gstreamer-superficial@0.0.1",
-  "_from": "gstreamer-superficial@"
+    "url": "https://github.com/skyrising/node-gstreamer-superficial/issues"
+  }
 }
