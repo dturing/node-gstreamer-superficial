@@ -6,8 +6,8 @@
 #include "Pipeline.h"
 
 
-void init( v8::Handle<v8::Object> exports ) {
-	gst_init( NULL, NULL );
+void init(Nan::ADDON_REGISTER_FUNCTION_ARGS_TYPE exports) {
+	gst_init(NULL, NULL);
 	GObjectWrap::Init();
 	Pipeline::Init(exports);
 }

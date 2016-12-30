@@ -16,6 +16,8 @@
   "contributors": [],
   "dependencies": {},
   "devDependencies": {
+    "express": "^4.14.0",
+    "morgan": "^1.7.0",
     "nan": "^2.2.0"
   },
   "engines": {

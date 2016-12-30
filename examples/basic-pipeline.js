@@ -1,21 +1,18 @@
 #!/usr/bin/env node
 
-var util = require("util");
-var gstreamer = require('..');
+const util = require('util');
+const gstreamer = require('..');
 
-var pipeline = new gstreamer.Pipeline("videotestsrc ! textoverlay name=text ! autovideosink");
+const pipeline = new gstreamer.Pipeline('videotestsrc ! textoverlay name=text ! autovideosink');
 pipeline.play();
 
-var target = pipeline.findChild("text");
-target.set( {
-	"text":"hello", 
-	"font-desc":"Helvetica 32",
-	} );
+const target = pipeline.findChild('text');
+target.text = 'hello';
+target['font-desc'] = 'Helvetica 32';
 
 
-var t = 0;
+let t = 0;
 setInterval( function() {
 	t++;
-	target.set("text", "@"+t);
+	target.text = '@'+t;
 }, 1000 );
-
