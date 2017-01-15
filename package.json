@@ -13,7 +13,20 @@
     "url": "git@github.com:dturing/node-gstreamer-superficial.git"
   },
   "maintainers": [],
-  "contributors": [],
+  "contributors": [
+    {
+      "name": "Jon Nettleton",
+      "url": "https://github.com/linux4kix"
+    },
+    {
+      "name": "Anton K.",
+      "url": "https://github.com/dasantonym"
+    },
+    {
+      "name": "Scott Przybylski",
+      "url": "https://github.com/skaughtx0r"
+    }
+  ],
   "dependencies": {
     "nan": "^2.5.0"
   },
