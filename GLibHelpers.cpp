@@ -68,9 +68,9 @@ Handle<Value> gvalue_to_v8(const GValue *gv) {
 
 	if(GST_VALUE_HOLDS_ARRAY(gv)) {
 		return gstvaluearray_to_v8(gv);
-  } else if(GST_VALUE_HOLDS_BUFFER(gv)) {
-    GstBuffer *buf = gst_value_get_buffer(gv);
-    return gstbuffer_to_v8(buf);
+	} else if(GST_VALUE_HOLDS_BUFFER(gv)) {
+		GstBuffer *buf = gst_value_get_buffer(gv);
+		return gstbuffer_to_v8(buf);
 	}
 	
 	//printf("Value is of unhandled type %s\n", G_VALUE_TYPE_NAME(gv));
@@ -88,15 +88,15 @@ Handle<Value> gvalue_to_v8(const GValue *gv) {
 
 void v8_to_gvalue(Handle<Value> v, GValue *gv) {
 	if(v->IsNumber()) {
-        g_value_init(gv, G_TYPE_FLOAT);
-        g_value_set_float(gv, v->NumberValue());
+		g_value_init(gv, G_TYPE_FLOAT);
+		g_value_set_float(gv, v->NumberValue());
 	} else if(v->IsString()) {
 		String::Utf8Value value(v->ToString());
-        g_value_init(gv, G_TYPE_STRING);
-        g_value_set_string(gv, *value);
+		g_value_init(gv, G_TYPE_STRING);
+		g_value_set_string(gv, *value);
 	} else if(v->IsBoolean()) {
-        g_value_init(gv, G_TYPE_BOOLEAN);
-        g_value_set_boolean(gv, v->BooleanValue());
+		g_value_init(gv, G_TYPE_BOOLEAN);
+		g_value_set_boolean(gv, v->BooleanValue());
 	}
 
 	return;
@@ -114,7 +114,7 @@ gboolean gst_structure_to_v8_value_iterate(GQuark field_id, const GValue *val, g
 	return true;
 }
 
-Handle<Object> gst_structure_to_v8(Handle<Object> obj, GstStructure *struc) {
+Handle<Object> gst_structure_to_v8(Handle<Object> obj, const GstStructure *struc) {
 	const gchar *name = gst_structure_get_name(struc);
 	obj->Set(Nan::New("name").ToLocalChecked(), Nan::New(name).ToLocalChecked());
 	gst_structure_foreach(struc, gst_structure_to_v8_value_iterate, &obj);
