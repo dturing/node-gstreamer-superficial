@@ -25,12 +25,19 @@
     {
       "name": "Scott Przybylski",
       "url": "https://github.com/skaughtx0r"
-    }
+    },
+    {
+      "name": "Simon Wanner",
+      "email": "skyrising@pvpctutorials.de",
+      "url": "https://pvpctutorials.de"
+    }      
   ],
   "dependencies": {
     "nan": "^2.5.0"
   },
   "devDependencies": {
+    "express": "^4.14.0",
+    "morgan": "^1.7.0",
   },
   "engines": {
     "node": ">= 5.9.1"

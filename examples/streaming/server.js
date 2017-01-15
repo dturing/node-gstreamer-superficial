@@ -1,12 +1,16 @@
 #!/usr/bin/env node
-var gstreamer = require('gstreamer-superficial');
-var pipeline = new gstreamer.Pipeline("videotestsrc ! theoraenc ! oggmux ! appsink max-buffers=1 name=sink");
 
+//FIXME: Not working at this time
 
-var clients = [];
-var headers = [];
+const logger = require('morgan');
+const gstreamer = require('../..');
 
-var appsink = pipeline.findChild("sink");
+const pipeline = new gstreamer.Pipeline('videotestsrc ! vp9enc ! webmmux ! appsink max-buffers=1 name=sink');
+
+const clients = [];
+let headers;
+
+const appsink = pipeline.findChild('sink');
 
 var pull = function() {
     appsink.pull(function(buf) {
@@ -31,36 +35,33 @@ pipeline.play();
 pull();
 
 pipeline.pollBus( function(msg) {
-//	console.log("bus message:",msg);
+//	console.log('bus message:',msg);
 	switch( msg.type ) {
-		case "eos": 
+		case 'eos': 
 			pipeline.stop();
 			break;
 	}
 });
 
-pipeline.play();
 
+const config = { http_port:8001 };
 
-config = { http_port:8001 };
+const express = require('express');
+const app = express();
+app.use(logger());
 
-var express = require('express');
-var app = express();
-//app.use( express.logger() );
-
-app.get('/stream.ogg', function(req, res){
-  res.setHeader('Content-Type', 'video/ogg');
-  for( h in headers ) {
-  	res.write( headers[h] );
-  }
+app.get('/stream.webm', function(req, res){
+  res.setHeader('Content-Type', 'video/webm');
+	if(headers)
+  for(let header of headers)
+  	res.write(header);
   clients.push(res);
-  res.on("close", function() {
-  	console.log("client closed"); // remove
+  res.on('close', function() {
+  	console.log('client closed'); // remove
   });
 });
 
-app.use( express.static( __dirname ) );
+app.use(express.static(__dirname));
 
-console.log("Running http server on port "+config.http_port );
-app.listen( config.http_port );
-
+console.log('Running http server on port', config.http_port);
+app.listen(config.http_port);
