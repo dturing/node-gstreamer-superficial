@@ -1,6 +1,6 @@
 {
   "name": "gstreamer-superficial",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Superficial GStreamer binding",
   "author": {
     "name": "Daniel Turing",
@@ -47,11 +47,9 @@
     "install": "node-gyp rebuild"
   },
   "gypfile": true,
-  "readme": "You shouldn't've read me.",
   "readmeFilename": "README.md",
+  "license": "GPL-3.0",
   "bugs": {
     "url": "https://github.com/dturing/node-gstreamer-superficial/issues"
-  },
-  "_id": "gstreamer-superficial@0.0.1",
-  "_from": "gstreamer-superficial@"
+  }
 }
