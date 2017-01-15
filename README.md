@@ -74,5 +74,7 @@ is broken, but was once working as implemented in examples/streaming; run server
 
 ## Who?
 
-gstreamer-superficial was written by Daniel Turing (mail AT danielturing.com) and currently licensed under the GPLv3. Pester me if you prefer a different License..
+gstreamer-superficial was originally written by Daniel Turing, and has 
+received contributions from various individuals as seen on github and
+in package.json.
 
