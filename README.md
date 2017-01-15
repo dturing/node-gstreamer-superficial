@@ -55,15 +55,19 @@ You can feast off GStreamer's appsink to handle binary data.
 ```javascript
 const appsink = pipeline.findChild('sink');
 
-function onData(buf) {
-	console.log('BUFFER size', buf.length);
-	appsink.pull(onData);
+function onData(buf, caps) {
+	if (caps) {
+		console.log('CAPS', caps);
+	}
+	if (buf) {
+		console.log('BUFFER size', buf.length);
+		appsink.pull(onData);
+	}
+
+	// !buf probably means EOS
 }
 
-appsink.pull(onData, caps => {
-	/* caps currently not implemented */
-	console.log('CAPS', caps);
-});
+appsink.pull(onData);
 ```
 
 (see _examples/appsink.js_)
@@ -71,11 +75,12 @@ appsink.pull(onData, caps => {
 
 ### A simple Ogg/Theora streaming server
 
-is broken, but was once working as implemented in _examples/streaming/_  
+should be working as implemented in _examples/streaming/_  
 run server.js (requires express) and point your browser to http://localhost:8001. (Tested only with Chromium).
 This handles retaining the streamheader to feed first to every newly connected client.
 
 
 ## Who?
 
-gstreamer-superficial was written by Daniel Turing (mail AT danielturing.com) and currently licensed under the GPLv3. Pester me if you prefer a different License..
+gstreamer-superficial was written by Daniel Turing (mail AT danielturing.com) and Contibutors, and is currently licensed under the GPLv3. I'm trying to relicense as MIT but am waiting for
+Contributor's sign-off.

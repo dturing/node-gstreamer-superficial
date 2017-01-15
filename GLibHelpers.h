@@ -14,7 +14,7 @@ Handle<Value> gvalue_to_v8( const GValue *gv );
 void v8_to_gvalue( Handle<Value> v, GValue *gv );
 
 gboolean gst_structure_to_v8_value_iterate( GQuark field_id, const GValue *val, gpointer user_data );
-Handle<Object> gst_structure_to_v8( Handle<Object> obj, GstStructure *struc );
+Handle<Object> gst_structure_to_v8( Handle<Object> obj, const GstStructure *struc );
 
 
 #endif
