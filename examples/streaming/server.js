@@ -2,13 +2,12 @@
 
 //FIXME: Not working at this time
 
-const logger = require('morgan');
 const gstreamer = require('../..');
 
-const pipeline = new gstreamer.Pipeline('videotestsrc ! vp9enc ! webmmux ! appsink max-buffers=1 name=sink');
+const pipeline = new gstreamer.Pipeline('videotestsrc ! theoraenc ! oggmux ! appsink max-buffers=1 name=sink');
 
 const clients = [];
-let headers;
+let headers = [];
 
 const appsink = pipeline.findChild('sink');
 
@@ -48,9 +47,8 @@ const config = { http_port:8001 };
 
 const express = require('express');
 const app = express();
-app.use(logger());
 
-app.get('/stream.webm', function(req, res){
+app.get('/stream.ogg', function(req, res){
   res.setHeader('Content-Type', 'video/webm');
 	if(headers)
   for(let header of headers)
