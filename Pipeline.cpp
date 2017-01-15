@@ -45,7 +45,10 @@ void Pipeline::Init(Nan::ADDON_REGISTER_FUNCTION_ARGS_TYPE exports) {
 			
 	Nan::SetAccessor(proto, Nan::New("auto-flush-bus").ToLocalChecked(), GetAutoFlushBus, SetAutoFlushBus);
 	Nan::SetAccessor(proto, Nan::New("delay").ToLocalChecked(), GetDelay, SetDelay);
+	
+	#if GST_CHECK_VERSION(1,11,1)
 	Nan::SetAccessor(proto, Nan::New("latency").ToLocalChecked(), GetLatency, SetLatency);
+	#endif 
 	
 	constructor.Reset(ctor->GetFunction());
 	exports->Set(Nan::New("Pipeline").ToLocalChecked(), ctor->GetFunction());
@@ -210,6 +213,12 @@ NAN_SETTER(Pipeline::SetDelay) {
 		gst_pipeline_set_delay(obj->pipeline, DOUBLE_TO_NANOS(value->NumberValue()));
 	}
 }
+
+// GetLatency and SetLatency was added in version 1.11.1 check the installed
+// gst version to make sure this is supported
+// GST_CHECK_VERSION returns true if installed version is greater than
+// entered version
+#if GST_CHECK_VERSION(1,11,1)
 NAN_GETTER(Pipeline::GetLatency) {
 	Pipeline *obj = Nan::ObjectWrap::Unwrap<Pipeline>(info.This());
 	double secs = NANOS_TO_DOUBLE(gst_pipeline_get_latency(obj->pipeline));
@@ -221,3 +230,4 @@ NAN_SETTER(Pipeline::SetLatency) {
 		gst_pipeline_set_latency(obj->pipeline, DOUBLE_TO_NANOS(value->NumberValue()));
 	}
 }
+#endif
