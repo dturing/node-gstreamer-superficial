@@ -1,6 +1,6 @@
 {
   "name": "gstreamer-superficial",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Superficial GStreamer binding",
   "author": {
     "name": "Daniel Turing",
@@ -13,10 +13,30 @@
     "url": "git@github.com:dturing/node-gstreamer-superficial.git"
   },
   "maintainers": [],
-  "contributors": [],
-  "dependencies": {},
+  "contributors": [
+    {
+      "name": "Jon Nettleton",
+      "url": "https://github.com/linux4kix"
+    },
+    {
+      "name": "Anton K.",
+      "url": "https://github.com/dasantonym"
+    },
+    {
+      "name": "Scott Przybylski",
+      "url": "https://github.com/skaughtx0r"
+    },
+    {
+      "name": "Simon Wanner",
+      "email": "skyrising@pvpctutorials.de",
+      "url": "https://pvpctutorials.de"
+    }      
+  ],
+  "dependencies": {
+    "nan": "^2.5.0"
+  },
   "devDependencies": {
-    "nan": "^2.2.0"
+    "morgan": "^1.7.0"
   },
   "engines": {
     "node": ">= 5.9.1"
@@ -26,12 +46,9 @@
     "install": "node-gyp rebuild"
   },
   "gypfile": true,
-  "readme": "You shouldn't've read me.",
   "readmeFilename": "README.md",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/dturing/node-gstreamer-superficial/issues"
-  },
-  "_id": "gstreamer-superficial@0.0.1",
-  "_from": "gstreamer-superficial@"
+  }
 }

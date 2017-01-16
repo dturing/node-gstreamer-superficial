@@ -9,33 +9,30 @@
 class GObjectWrap : public Nan::ObjectWrap {
 	public:
 		static void Init();
-		static v8::Handle<v8::Value> NewInstance( const Nan::FunctionCallbackInfo<v8::Value>& info, GObject *obj );
+		static Handle<Value> NewInstance( const Nan::FunctionCallbackInfo<Value>& info, GObject *obj );
 
-		void set( const char *name, const v8::Handle<v8::Value> value );
+		void set( const char *name, const Handle<Value> value );
 
 		void play();
 		void pause();
 		void stop();
 		
 	private:
-		GObjectWrap();
-		~GObjectWrap();
+		GObjectWrap() {}
+		~GObjectWrap() {}
 		
 		GObject *obj;
 		
-		static Nan::Persistent<v8::Function> constructor;
+		static Nan::Persistent<Function> constructor;
 		static NAN_METHOD(New);
-		static NAN_METHOD(_get);
-		static NAN_METHOD(_set);
-		static NAN_METHOD(_play);
-		static NAN_METHOD(_pause);
-		static NAN_METHOD(_stop);
+		static NAN_SETTER(SetProperty);
+		static NAN_GETTER(GetProperty);
 
 /*
 		static void _doPullBuffer( uv_work_t *req );
 		static void _pulledBuffer( uv_work_t *req, int );
 		*/
-		static NAN_METHOD(_pull);
+		static NAN_METHOD(GstAppSinkPull);
 };
 
 #endif
