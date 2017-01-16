@@ -1,6 +1,6 @@
 # node-gstreamer-mpegstreamer
 
-This examples shows how to encode and stream a m-jpeg feed with gstreamer and the node-gstreamer-superficial appsink interface.
+This example shows how to encode and stream a m-jpeg feed with gstreamer and the node-gstreamer-superficial appsink interface. This example depends on express. 
 
 Streaming jpeg images is probably the oldest way to support streaming video in browsers and has wide broswer support. The [Amazing FishCam claims](http://www.fishcam.com/) to be the oldest webcam feed which started streaming off a fishtank at Netscape in 1994 when they started supporting it. 
 
