@@ -47,7 +47,7 @@
   },
   "gypfile": true,
   "readmeFilename": "README.md",
-  "license": "GPL-3.0",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/dturing/node-gstreamer-superficial/issues"
   }
