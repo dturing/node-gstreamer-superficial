@@ -30,7 +30,11 @@
       "name": "Simon Wanner",
       "email": "skyrising@pvpctutorials.de",
       "url": "https://pvpctutorials.de"
-    }      
+    },
+    {
+      "name": "Greg Futia",
+      "url": "linux@gregfutia.com"
+    }
   ],
   "dependencies": {
     "nan": "^2.5.0"
