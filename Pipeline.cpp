@@ -28,7 +28,7 @@ Pipeline::Pipeline(GstPipeline* pipeline) {
 }
 
 void Pipeline::Init(Nan::ADDON_REGISTER_FUNCTION_ARGS_TYPE exports) {
-  Nan::HandleScope scope;
+	Nan::HandleScope scope;
 	
 	Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(Pipeline::New);
 	ctor->InstanceTemplate()->SetInternalFieldCount(1);
@@ -52,8 +52,8 @@ void Pipeline::Init(Nan::ADDON_REGISTER_FUNCTION_ARGS_TYPE exports) {
 }
 
 NAN_METHOD(Pipeline::New) {
-  if (!info.IsConstructCall())
-    return Nan::ThrowTypeError("Class constructors cannot be invoked without 'new'");
+	if (!info.IsConstructCall())
+		return Nan::ThrowTypeError("Class constructors cannot be invoked without 'new'");
 
 	String::Utf8Value launch(info[0]->ToString());
 
@@ -63,7 +63,7 @@ NAN_METHOD(Pipeline::New) {
 }
 
 void Pipeline::play() {
-  gst_element_set_state(GST_ELEMENT(pipeline), GST_STATE_PLAYING);
+	gst_element_set_state(GST_ELEMENT(pipeline), GST_STATE_PLAYING);
 }
 
 NAN_METHOD(Pipeline::Play) {
@@ -72,7 +72,7 @@ NAN_METHOD(Pipeline::Play) {
 }
 
 void Pipeline::stop() {
-  gst_element_set_state(GST_ELEMENT(pipeline), GST_STATE_NULL);
+	gst_element_set_state(GST_ELEMENT(pipeline), GST_STATE_NULL);
 }
 
 NAN_METHOD(Pipeline::Stop) {
@@ -81,7 +81,7 @@ NAN_METHOD(Pipeline::Stop) {
 }
 
 void Pipeline::pause() {
-  gst_element_set_state(GST_ELEMENT(pipeline), GST_STATE_PAUSED);
+	gst_element_set_state(GST_ELEMENT(pipeline), GST_STATE_PAUSED);
 }
 
 NAN_METHOD(Pipeline::Pause) {
@@ -90,8 +90,8 @@ NAN_METHOD(Pipeline::Pause) {
 }
 
 void Pipeline::forceKeyUnit(GObject *sink, int cnt) {
-  GstPad *sinkpad = gst_element_get_static_pad(GST_ELEMENT(sink), "sink");
-  gst_pad_push_event(sinkpad,(GstEvent*) gst_video_event_new_upstream_force_key_unit(GST_CLOCK_TIME_NONE, TRUE, cnt));
+	GstPad *sinkpad = gst_element_get_static_pad(GST_ELEMENT(sink), "sink");
+	gst_pad_push_event(sinkpad,(GstEvent*) gst_video_event_new_upstream_force_key_unit(GST_CLOCK_TIME_NONE, TRUE, cnt));
 }
 
 NAN_METHOD(Pipeline::ForceKeyUnit) {
@@ -104,8 +104,8 @@ NAN_METHOD(Pipeline::ForceKeyUnit) {
 }
 
 GObject * Pipeline::findChild(const char *name) {
-  GstElement *e = gst_bin_get_by_name(GST_BIN(pipeline), name);
-  return G_OBJECT(e);
+	GstElement *e = gst_bin_get_by_name(GST_BIN(pipeline), name);
+	return G_OBJECT(e);
 }
 
 NAN_METHOD(Pipeline::FindChild) {
@@ -140,9 +140,9 @@ void Pipeline::_polledBus(uv_work_t *req, int n) {
 		Local<Object> m = Nan::New<Object>();
 		m->Set(Nan::New("type").ToLocalChecked(), Nan::New(GST_MESSAGE_TYPE_NAME(br->msg)).ToLocalChecked());
 	
-		GstStructure *structure = (GstStructure*)gst_message_get_structure(br->msg);
-    if(structure)
-      gst_structure_to_v8(m, structure);
+		const GstStructure *structure = (GstStructure*)gst_message_get_structure(br->msg);
+		if(structure)
+			gst_structure_to_v8(m, structure);
 
 		if(GST_MESSAGE_TYPE(br->msg) == GST_MESSAGE_ERROR) {
 			GError *err = NULL;

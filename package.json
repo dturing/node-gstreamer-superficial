@@ -30,7 +30,11 @@
       "name": "Simon Wanner",
       "email": "skyrising@pvpctutorials.de",
       "url": "https://pvpctutorials.de"
-    }      
+    },
+    {
+      "name": "Greg Futia",
+      "url": "linux@gregfutia.com"
+    }
   ],
   "dependencies": {
     "nan": "^2.5.0"
@@ -47,7 +51,7 @@
   },
   "gypfile": true,
   "readmeFilename": "README.md",
-  "license": "GPL-3.0",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/dturing/node-gstreamer-superficial/issues"
   }
