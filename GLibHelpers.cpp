@@ -18,6 +18,7 @@ Handle<Value> gstbuffer_to_v8(GstBuffer *buf) {
 		const unsigned char *data = map.data;
 		int length = map.size;
 		Handle<Object> frame = createBuffer((char *)data, length);
+		gst_buffer_unmap(buf, &map);
 		return frame;
 	}
 	return Nan::Undefined();
