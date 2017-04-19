@@ -13,6 +13,7 @@ class Pipeline : public Nan::ObjectWrap {
 		void play();
 		void pause();
 		void stop();
+		void sendEOS();
 		void forceKeyUnit(GObject* sink, int cnt);
 		
 		GObject *findChild( const char *name );
@@ -31,6 +32,7 @@ class Pipeline : public Nan::ObjectWrap {
 		static NAN_METHOD(Play);
 		static NAN_METHOD(Pause);
 		static NAN_METHOD(Stop);
+		static NAN_METHOD(SendEOS);
 		static NAN_METHOD(ForceKeyUnit);
 		static NAN_METHOD(FindChild);
 
