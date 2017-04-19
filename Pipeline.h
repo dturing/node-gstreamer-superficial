@@ -44,8 +44,15 @@ class Pipeline : public Nan::ObjectWrap {
 		static NAN_SETTER(SetAutoFlushBus);
 		static NAN_GETTER(GetDelay);
 		static NAN_SETTER(SetDelay);
+		
+		// GetLatency and SetLatency was added in version 1.11.1 check the installed
+		// gst version to make sure this is supported
+		// GST_CHECK_VERSION returns true if installed version is greater than
+		// entered version
+		#if GST_CHECK_VERSION(1,11,1)
 		static NAN_GETTER(GetLatency);
 		static NAN_SETTER(SetLatency);
+		#endif
 		
 };
 
