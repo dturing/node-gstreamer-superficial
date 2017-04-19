@@ -39,6 +39,7 @@ void Pipeline::Init(Nan::ADDON_REGISTER_FUNCTION_ARGS_TYPE exports) {
 	Nan::SetPrototypeMethod(ctor, "play", Play);
 	Nan::SetPrototypeMethod(ctor, "pause", Pause);
 	Nan::SetPrototypeMethod(ctor, "stop", Stop);
+	Nan::SetPrototypeMethod(ctor, "sendEOS", SendEOS);
 	Nan::SetPrototypeMethod(ctor, "forceKeyUnit", ForceKeyUnit);
 	Nan::SetPrototypeMethod(ctor, "findChild", FindChild);
 	Nan::SetPrototypeMethod(ctor, "pollBus", PollBus);
@@ -78,6 +79,15 @@ void Pipeline::stop() {
 NAN_METHOD(Pipeline::Stop) {
 	Pipeline* obj = Nan::ObjectWrap::Unwrap<Pipeline>(info.This());
 	obj->stop();
+}
+
+void Pipeline::sendEOS() {
+	gst_element_send_event(GST_ELEMENT(pipeline), gst_event_new_eos());
+}
+
+NAN_METHOD(Pipeline::SendEOS) {
+	Pipeline* obj = Nan::ObjectWrap::Unwrap<Pipeline>(info.This());
+	obj->sendEOS();
 }
 
 void Pipeline::pause() {
