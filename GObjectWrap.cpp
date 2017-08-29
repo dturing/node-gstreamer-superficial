@@ -49,6 +49,9 @@ Handle<Value> GObjectWrap::NewInstance( const Nan::FunctionCallbackInfo<Value>& 
 	
 	if(GST_IS_APP_SINK(obj))
 		Nan::SetMethod(instance, "pull", GstAppSinkPull);
+	if (GST_IS_APP_SRC(obj))
+		Nan::SetMethod(instance, "push", GstAppSrcPush);
+		Nan::SetMethod(instance, "setCapsFromString", GstAppSrcSetCapsFromString);
 	
 	info.GetReturnValue().Set(instance);
 	return scope.Escape(instance);
@@ -145,7 +148,7 @@ NAN_METHOD(GObjectWrap::GstAppSrcPush) {
             gst_buffer_fill(gst_buffer, 0, buffer, buffer_length);
 
             gst_app_src_push_buffer(GST_APP_SRC(obj->obj), gst_buffer);
-            gst_buffer_unref(gst_buffer);
+           // gst_buffer_unref(gst_buffer);
         }
         // TODO throw an error if arg is not a buffer object?
     }
