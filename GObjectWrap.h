@@ -33,6 +33,8 @@ class GObjectWrap : public Nan::ObjectWrap {
 		static void _pulledBuffer( uv_work_t *req, int );
 		*/
 		static NAN_METHOD(GstAppSinkPull);
+        static NAN_METHOD(GstAppSrcPush);
+        static NAN_METHOD(GstAppSrcSetCapsFromString);
 };
 
 #endif
