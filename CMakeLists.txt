@@ -5,7 +5,7 @@ find_package(PkgConfig)
 pkg_check_modules(gstreamer-1.0 gstreamer-app-1.0 gstreamer-video-1.0)
 
 include_directories(
-    /usr/local/include/node/
+    /usr/include/node
     ./node_modules/nan
     ${gstreamer-1.0_INCLUDE_DIRS}
     ${gstreamer-app-1.0_INCLUDE_DIRS}
@@ -14,5 +14,5 @@ include_directories(
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
-set(SOURCE_FILES gstreamer.cpp)
+set(SOURCE_FILES gstreamer.cpp gstreamer.cpp GLibHelpers.cpp GObjectWrap.cpp Pipeline.cpp)
 add_executable(gstreamer-superficial ${SOURCE_FILES})
