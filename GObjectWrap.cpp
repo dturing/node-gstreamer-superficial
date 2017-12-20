@@ -1,6 +1,7 @@
 #include <nan.h>
 #include <gst/gst.h>
 #include <gst/app/gstappsink.h>
+#include <gst/app/gstappsrc.h>
 
 #include "GObjectWrap.h"
 
@@ -48,6 +49,9 @@ Handle<Value> GObjectWrap::NewInstance( const Nan::FunctionCallbackInfo<Value>& 
 	
 	if(GST_IS_APP_SINK(obj))
 		Nan::SetMethod(instance, "pull", GstAppSinkPull);
+	if (GST_IS_APP_SRC(obj))
+		Nan::SetMethod(instance, "push", GstAppSrcPush);
+		Nan::SetMethod(instance, "setCapsFromString", GstAppSrcSetCapsFromString);
 	
 	info.GetReturnValue().Set(instance);
 	return scope.Escape(instance);
@@ -130,4 +134,38 @@ NAN_METHOD(GObjectWrap::GstAppSinkPull) {
 	GObjectWrap* obj = Nan::ObjectWrap::Unwrap<GObjectWrap>(info.This());
 	Nan::Callback *callback = new Nan::Callback(info[0].As<Function>());
 	AsyncQueueWorker(new PullWorker(callback, GST_APP_SINK(obj->obj)));
+}
+
+NAN_METHOD(GObjectWrap::GstAppSrcPush) {
+    auto *obj = Nan::ObjectWrap::Unwrap<GObjectWrap>(info.This());
+
+    if (info.Length() > 0) {
+        if (info[0]->IsObject()) {
+            char *buffer = node::Buffer::Data(info[0]->ToObject());
+            size_t buffer_length = node::Buffer::Length(info[0]->ToObject());
+
+            GstBuffer *gst_buffer = gst_buffer_new_allocate(nullptr, buffer_length, nullptr);
+            gst_buffer_fill(gst_buffer, 0, buffer, buffer_length);
+
+            gst_app_src_push_buffer(GST_APP_SRC(obj->obj), gst_buffer);
+           // gst_buffer_unref(gst_buffer);
+        }
+        // TODO throw an error if arg is not a buffer object?
+    }
+    // TODO throw an error if no args are given?
+}
+
+NAN_METHOD(GObjectWrap::GstAppSrcSetCapsFromString) {
+    auto *obj = Nan::ObjectWrap::Unwrap<GObjectWrap>(info.This());
+
+    if (info.Length() > 0) {
+        if (info[0]->IsString()) {
+            String::Utf8Value str(info[0]->ToString());
+            GstCaps *caps = gst_caps_from_string((const char *) (*str));
+
+            gst_app_src_set_caps(GST_APP_SRC(obj->obj), caps);
+        }
+        // TODO throw an error if arg is not a string?
+    }
+    // TODO throw an error if no args are given?
 }
