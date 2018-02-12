@@ -9,7 +9,7 @@ Nan::Persistent<Function> GObjectWrap::constructor;
 
 void GObjectWrap::Init() {
 	Nan::HandleScope scope;
-	
+
 	// Constructor
 	Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(GObjectWrap::New);
 	ctor->InstanceTemplate()->SetInternalFieldCount(1);
@@ -46,13 +46,15 @@ Handle<Value> GObjectWrap::NewInstance( const Nan::FunctionCallbackInfo<Value>& 
 		Local<String> name = String::NewFromUtf8(isolate, property->name);
 		Nan::SetAccessor(instance, name, GObjectWrap::GetProperty, GObjectWrap::SetProperty);
 	}
-	
-	if(GST_IS_APP_SINK(obj))
-		Nan::SetMethod(instance, "pull", GstAppSinkPull);
-	if (GST_IS_APP_SRC(obj))
-		Nan::SetMethod(instance, "push", GstAppSrcPush);
-		Nan::SetMethod(instance, "setCapsFromString", GstAppSrcSetCapsFromString);
-	
+
+	if(GST_IS_APP_SINK(obj)) {
+        Nan::SetMethod(instance, "pull", GstAppSinkPull);
+	}
+	if (GST_IS_APP_SRC(obj)) {
+	    Nan::SetMethod(instance, "push", GstAppSrcPush);
+	    Nan::SetMethod(instance, "setCapsFromString", GstAppSrcSetCapsFromString);
+	}
+
 	info.GetReturnValue().Set(instance);
 	return scope.Escape(instance);
 }
@@ -60,10 +62,10 @@ Handle<Value> GObjectWrap::NewInstance( const Nan::FunctionCallbackInfo<Value>& 
 NAN_GETTER(GObjectWrap::GetProperty) {
 	GObjectWrap* obj = Nan::ObjectWrap::Unwrap<GObjectWrap>(info.This());
 	String::Utf8Value name(property);
-	
+
 	GObject *o = obj->obj;
 	GParamSpec *spec = g_object_class_find_property(G_OBJECT_GET_CLASS(o), *name);
-	
+
 	if(!spec) {
 		info.GetReturnValue().Set(Nan::Undefined());
 	} else {
@@ -79,7 +81,7 @@ NAN_GETTER(GObjectWrap::GetProperty) {
 NAN_SETTER(GObjectWrap::SetProperty) {
 	GObjectWrap* obj = Nan::ObjectWrap::Unwrap<GObjectWrap>(info.This());
 	String::Utf8Value name(property);
-	
+
 	GObject *o = obj->obj;
 	GParamSpec *spec = g_object_class_find_property(G_OBJECT_GET_CLASS(o), *name);
 	if(spec) {
@@ -107,7 +109,7 @@ class PullWorker : public Nan::AsyncWorker {
 			Local<Value> buf;
 			Local<Object> caps = Nan::New<Object>();
 			if (sample) {
-				
+
 				GstCaps *gcaps = gst_sample_get_caps(sample);
 				if (gcaps) {
 					const GstStructure *structure = gst_caps_get_structure(gcaps,0);
