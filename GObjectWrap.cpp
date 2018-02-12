@@ -87,7 +87,7 @@ NAN_SETTER(GObjectWrap::SetProperty) {
 	if(spec) {
 		GValue gv;
 		memset( &gv, 0, sizeof( gv ) );
-		v8_to_gvalue( value, &gv );
+		v8_to_gvalue( value, &gv, spec);
 		g_object_set_property( o, *name, &gv );
 	}
 }
