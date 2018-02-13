@@ -52,7 +52,6 @@ Handle<Value> GObjectWrap::NewInstance( const Nan::FunctionCallbackInfo<Value>& 
 	}
 	if (GST_IS_APP_SRC(obj)) {
 	    Nan::SetMethod(instance, "push", GstAppSrcPush);
-	    Nan::SetMethod(instance, "setCapsFromString", GstAppSrcSetCapsFromString);
 	}
 
 	info.GetReturnValue().Set(instance);
@@ -153,21 +152,6 @@ NAN_METHOD(GObjectWrap::GstAppSrcPush) {
            // gst_buffer_unref(gst_buffer);
         }
         // TODO throw an error if arg is not a buffer object?
-    }
-    // TODO throw an error if no args are given?
-}
-
-NAN_METHOD(GObjectWrap::GstAppSrcSetCapsFromString) {
-    auto *obj = Nan::ObjectWrap::Unwrap<GObjectWrap>(info.This());
-
-    if (info.Length() > 0) {
-        if (info[0]->IsString()) {
-            String::Utf8Value str(info[0]->ToString());
-            GstCaps *caps = gst_caps_from_string((const char *) (*str));
-
-            gst_app_src_set_caps(GST_APP_SRC(obj->obj), caps);
-        }
-        // TODO throw an error if arg is not a string?
     }
     // TODO throw an error if no args are given?
 }
