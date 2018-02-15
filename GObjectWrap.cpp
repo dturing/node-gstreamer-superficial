@@ -9,7 +9,7 @@ Nan::Persistent<Function> GObjectWrap::constructor;
 
 void GObjectWrap::Init() {
 	Nan::HandleScope scope;
-	
+
 	// Constructor
 	Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(GObjectWrap::New);
 	ctor->InstanceTemplate()->SetInternalFieldCount(1);
@@ -46,13 +46,14 @@ Handle<Value> GObjectWrap::NewInstance( const Nan::FunctionCallbackInfo<Value>& 
 		Local<String> name = String::NewFromUtf8(isolate, property->name);
 		Nan::SetAccessor(instance, name, GObjectWrap::GetProperty, GObjectWrap::SetProperty);
 	}
-	
-	if(GST_IS_APP_SINK(obj))
-		Nan::SetMethod(instance, "pull", GstAppSinkPull);
-	if (GST_IS_APP_SRC(obj))
-		Nan::SetMethod(instance, "push", GstAppSrcPush);
-		Nan::SetMethod(instance, "setCapsFromString", GstAppSrcSetCapsFromString);
-	
+
+	if(GST_IS_APP_SINK(obj)) {
+        Nan::SetMethod(instance, "pull", GstAppSinkPull);
+	}
+	if (GST_IS_APP_SRC(obj)) {
+	    Nan::SetMethod(instance, "push", GstAppSrcPush);
+	}
+
 	info.GetReturnValue().Set(instance);
 	return scope.Escape(instance);
 }
@@ -60,10 +61,10 @@ Handle<Value> GObjectWrap::NewInstance( const Nan::FunctionCallbackInfo<Value>& 
 NAN_GETTER(GObjectWrap::GetProperty) {
 	GObjectWrap* obj = Nan::ObjectWrap::Unwrap<GObjectWrap>(info.This());
 	String::Utf8Value name(property);
-	
+
 	GObject *o = obj->obj;
 	GParamSpec *spec = g_object_class_find_property(G_OBJECT_GET_CLASS(o), *name);
-	
+
 	if(!spec) {
 		info.GetReturnValue().Set(Nan::Undefined());
 	} else {
@@ -79,13 +80,13 @@ NAN_GETTER(GObjectWrap::GetProperty) {
 NAN_SETTER(GObjectWrap::SetProperty) {
 	GObjectWrap* obj = Nan::ObjectWrap::Unwrap<GObjectWrap>(info.This());
 	String::Utf8Value name(property);
-	
+
 	GObject *o = obj->obj;
 	GParamSpec *spec = g_object_class_find_property(G_OBJECT_GET_CLASS(o), *name);
 	if(spec) {
 		GValue gv;
 		memset( &gv, 0, sizeof( gv ) );
-		v8_to_gvalue( value, &gv );
+		v8_to_gvalue( value, &gv, spec);
 		g_object_set_property( o, *name, &gv );
 	}
 }
@@ -107,7 +108,7 @@ class PullWorker : public Nan::AsyncWorker {
 			Local<Value> buf;
 			Local<Object> caps = Nan::New<Object>();
 			if (sample) {
-				
+
 				GstCaps *gcaps = gst_sample_get_caps(sample);
 				if (gcaps) {
 					const GstStructure *structure = gst_caps_get_structure(gcaps,0);
@@ -151,21 +152,6 @@ NAN_METHOD(GObjectWrap::GstAppSrcPush) {
            // gst_buffer_unref(gst_buffer);
         }
         // TODO throw an error if arg is not a buffer object?
-    }
-    // TODO throw an error if no args are given?
-}
-
-NAN_METHOD(GObjectWrap::GstAppSrcSetCapsFromString) {
-    auto *obj = Nan::ObjectWrap::Unwrap<GObjectWrap>(info.This());
-
-    if (info.Length() > 0) {
-        if (info[0]->IsString()) {
-            String::Utf8Value str(info[0]->ToString());
-            GstCaps *caps = gst_caps_from_string((const char *) (*str));
-
-            gst_app_src_set_caps(GST_APP_SRC(obj->obj), caps);
-        }
-        // TODO throw an error if arg is not a string?
     }
     // TODO throw an error if no args are given?
 }

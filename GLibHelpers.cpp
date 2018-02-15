@@ -1,5 +1,6 @@
 #include <nan.h>
 #include <gst/gst.h>
+#include <gst/gstcaps.h>
 
 #include "GLibHelpers.h"
 
@@ -73,7 +74,7 @@ Handle<Value> gvalue_to_v8(const GValue *gv) {
 		GstBuffer *buf = gst_value_get_buffer(gv);
 		return gstbuffer_to_v8(buf);
 	}
-	
+
 	//printf("Value is of unhandled type %s\n", G_VALUE_TYPE_NAME(gv));
 
 	/* Attempt to transform it into a GValue of type STRING */
@@ -83,18 +84,24 @@ Handle<Value> gvalue_to_v8(const GValue *gv) {
 		g_value_transform(gv, &b);
 		return gchararray_to_v8(&b);
 	}
-	
+
 	return Nan::Undefined();
 }
 
-void v8_to_gvalue(Handle<Value> v, GValue *gv) {
+void v8_to_gvalue(Handle<Value> v, GValue *gv, GParamSpec *spec) {
 	if(v->IsNumber()) {
 		g_value_init(gv, G_TYPE_FLOAT);
 		g_value_set_float(gv, v->NumberValue());
 	} else if(v->IsString()) {
-		String::Utf8Value value(v->ToString());
-		g_value_init(gv, G_TYPE_STRING);
-		g_value_set_string(gv, *value);
+        String::Utf8Value value(v->ToString());
+	    if(spec->value_type == GST_TYPE_CAPS) {
+	        GstCaps* caps = gst_caps_from_string(*value);
+	        g_value_init(gv, GST_TYPE_CAPS);
+	        g_value_set_boxed(gv, caps);
+	    } else {
+	        g_value_init(gv, G_TYPE_STRING);
+            g_value_set_string(gv, *value);
+	    }
 	} else if(v->IsBoolean()) {
 		g_value_init(gv, G_TYPE_BOOLEAN);
 		g_value_set_boolean(gv, v->BooleanValue());

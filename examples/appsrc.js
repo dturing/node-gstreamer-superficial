@@ -6,7 +6,7 @@ const pipeline = new gstreamer.Pipeline('appsrc name=mysource is-live=true ! ' +
     'autovideosink');
 
 const appsrc = pipeline.findChild('mysource')
-appsrc.setCapsFromString("video/x-raw,format=RGB,width=320,height=240,bpp=24,depth=24,framerate=0/1")
+appsrc.caps = "video/x-raw,format=RGB,width=320,height=240,bpp=24,depth=24,framerate=0/1"
 pipeline.play()
 
 

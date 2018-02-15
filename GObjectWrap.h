@@ -16,13 +16,13 @@ class GObjectWrap : public Nan::ObjectWrap {
 		void play();
 		void pause();
 		void stop();
-		
+
 	private:
 		GObjectWrap() {}
 		~GObjectWrap() {}
-		
+
 		GObject *obj;
-		
+
 		static Nan::Persistent<Function> constructor;
 		static NAN_METHOD(New);
 		static NAN_SETTER(SetProperty);
@@ -34,7 +34,6 @@ class GObjectWrap : public Nan::ObjectWrap {
 		*/
 		static NAN_METHOD(GstAppSinkPull);
         static NAN_METHOD(GstAppSrcPush);
-        static NAN_METHOD(GstAppSrcSetCapsFromString);
 };
 
 #endif
