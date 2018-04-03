@@ -1,6 +1,6 @@
 {
   "name": "gstreamer-superficial",
-  "version": "0.0.5",
+  "version": "1.0.0",
   "description": "Superficial GStreamer binding",
   "author": {
     "name": "Daniel Turing",
