@@ -148,6 +148,11 @@ NAN_METHOD(GObjectWrap::GstAppSrcPush) {
             GstBuffer *gst_buffer = gst_buffer_new_allocate(nullptr, buffer_length, nullptr);
             gst_buffer_fill(gst_buffer, 0, buffer, buffer_length);
 
+            if (info.Length() > 1) {
+              char *bufferPTS = node::Buffer::Data(info[1]->ToObject());
+              gst_buffer->pts = GST_READ_UINT64_BE(bufferPTS);
+            }
+
             gst_app_src_push_buffer(GST_APP_SRC(obj->obj), gst_buffer);
            // gst_buffer_unref(gst_buffer);
         }
