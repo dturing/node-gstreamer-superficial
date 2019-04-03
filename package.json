@@ -1,6 +1,6 @@
 {
   "name": "gstreamer-superficial",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Superficial GStreamer binding",
   "author": {
     "name": "Daniel Turing",
@@ -42,6 +42,10 @@
     {
       "name": "Erik De Rijcke",
       "url": "https://github.com/Zubnix"
+    },
+    {
+      "name": "Victor Soto",
+      "url": "https://github.com/jvictorsoto"
     }
   ],
   "dependencies": {
