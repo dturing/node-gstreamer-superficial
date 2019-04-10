@@ -73,6 +73,19 @@ Handle<Value> gvalue_to_v8(const GValue *gv) {
 	} else if(GST_VALUE_HOLDS_BUFFER(gv)) {
 		GstBuffer *buf = gst_value_get_buffer(gv);
 		return gstbuffer_to_v8(buf);
+	} else if(GST_VALUE_HOLDS_SAMPLE(gv)) {
+		GstSample *sample = gst_value_get_sample(gv);
+		Local<Object> caps = Nan::New<Object>();
+		GstCaps *gcaps = gst_sample_get_caps(sample);
+		if (gcaps) {
+			const GstStructure *structure = gst_caps_get_structure(gcaps,0);
+			if (structure) gst_structure_to_v8(caps, structure);
+		}
+
+		Local<Object> result = Nan::New<Object>();
+		result->Set(Nan::New("buf").ToLocalChecked(), gstsample_to_v8(sample));
+		result->Set(Nan::New("caps").ToLocalChecked(), caps);
+		return result;
 	}
 
 	//printf("Value is of unhandled type %s\n", G_VALUE_TYPE_NAME(gv));
