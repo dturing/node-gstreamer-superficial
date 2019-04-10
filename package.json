@@ -49,10 +49,10 @@
     }
   ],
   "dependencies": {
-    "nan": "^2.5.0"
+    "nan": "^2.13.2"
   },
   "devDependencies": {
-    "morgan": "^1.7.0"
+    "morgan": "^1.9.1"
   },
   "engines": {
     "node": ">= 5.9.1"
