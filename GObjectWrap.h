@@ -9,9 +9,9 @@
 class GObjectWrap : public Nan::ObjectWrap {
 	public:
 		static void Init();
-		static Handle<Value> NewInstance( const Nan::FunctionCallbackInfo<Value>& info, GObject *obj );
+		static Local<Value> NewInstance( const Nan::FunctionCallbackInfo<Value>& info, GObject *obj );
 
-		void set( const char *name, const Handle<Value> value );
+		void set( const char *name, const Local<Value> value );
 
 		void play();
 		void pause();

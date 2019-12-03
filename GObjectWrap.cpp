@@ -16,7 +16,7 @@ void GObjectWrap::Init() {
 	ctor->SetClassName(Nan::New<String>("GObjectWrap").ToLocalChecked());
 	// Prototype
 	//Local<ObjectPrototype> proto = ctor->PrototypeTemplate();
-	constructor.Reset(ctor->GetFunction());
+	constructor.Reset(Nan::GetFunction(ctor).ToLocalChecked());
 }
 
 NAN_METHOD(GObjectWrap::New) {
@@ -26,15 +26,15 @@ NAN_METHOD(GObjectWrap::New) {
 	info.GetReturnValue().Set(info.This());
 }
 
-Handle<Value> GObjectWrap::NewInstance( const Nan::FunctionCallbackInfo<Value>& info, GObject *obj ) {
+Local<Value> GObjectWrap::NewInstance( const Nan::FunctionCallbackInfo<Value>& info, GObject *obj ) {
 	Nan::EscapableHandleScope scope;
 	const unsigned argc = 1;
 	Isolate* isolate = info.GetIsolate();
 
 	Local<Context> context = isolate->GetCurrentContext();
 	Local<Function> constructorLocal = Nan::New(constructor);
-	constructorLocal->SetName(String::NewFromUtf8(isolate, G_OBJECT_TYPE_NAME(obj)));
-	Handle<Value> argv[argc] = { info[0] };
+	constructorLocal->SetName(String::NewFromUtf8(isolate, G_OBJECT_TYPE_NAME(obj)).ToLocalChecked());
+	Local<Value> argv[argc] = { info[0] };
 	Local<Object> instance = constructorLocal->NewInstance(context, argc, argv).ToLocalChecked();
 
 	GObjectWrap* wrap = Nan::ObjectWrap::Unwrap<GObjectWrap>(instance);
@@ -43,7 +43,7 @@ Handle<Value> GObjectWrap::NewInstance( const Nan::FunctionCallbackInfo<Value>& 
 	GParamSpec **properties = g_object_class_list_properties(G_OBJECT_GET_CLASS(obj), &n_properties);
 	for(guint i = 0; i < n_properties; i++) {
 		GParamSpec *property = properties[i];
-		Local<String> name = String::NewFromUtf8(isolate, property->name);
+		Local<String> name = String::NewFromUtf8(isolate, property->name).ToLocalChecked();
 		Nan::SetAccessor(instance, name, GObjectWrap::GetProperty, GObjectWrap::SetProperty);
 	}
 
@@ -60,7 +60,7 @@ Handle<Value> GObjectWrap::NewInstance( const Nan::FunctionCallbackInfo<Value>& 
 
 NAN_GETTER(GObjectWrap::GetProperty) {
 	GObjectWrap* obj = Nan::ObjectWrap::Unwrap<GObjectWrap>(info.This());
-	String::Utf8Value name(property);
+	Nan::Utf8String name(property);
 
 	GObject *o = obj->obj;
 	GParamSpec *spec = g_object_class_find_property(G_OBJECT_GET_CLASS(o), *name);
@@ -79,7 +79,7 @@ NAN_GETTER(GObjectWrap::GetProperty) {
 
 NAN_SETTER(GObjectWrap::SetProperty) {
 	GObjectWrap* obj = Nan::ObjectWrap::Unwrap<GObjectWrap>(info.This());
-	String::Utf8Value name(property);
+	Nan::Utf8String name(property);
 
 	GObject *o = obj->obj;
 	GParamSpec *spec = g_object_class_find_property(G_OBJECT_GET_CLASS(o), *name);
@@ -94,7 +94,7 @@ NAN_SETTER(GObjectWrap::SetProperty) {
 class PullWorker : public Nan::AsyncWorker {
 	public:
 		PullWorker(Nan::Callback *callback, GstAppSink *appsink)
-		: AsyncWorker(callback), appsink(appsink) {};
+		: AsyncWorker(callback,"node-gst-superficial.PullWorker"), appsink(appsink) {};
 
 		~PullWorker() {}
 
@@ -123,7 +123,7 @@ class PullWorker : public Nan::AsyncWorker {
 			}
 
 			Local<Value> argv[] = { buf, caps };
-			callback->Call(2, argv);
+			callback->Call(2, argv, async_resource);
 		}
 
 	private:
@@ -142,14 +142,15 @@ NAN_METHOD(GObjectWrap::GstAppSrcPush) {
 
     if (info.Length() > 0) {
         if (info[0]->IsObject()) {
-            char *buffer = node::Buffer::Data(info[0]->ToObject());
-            size_t buffer_length = node::Buffer::Length(info[0]->ToObject());
+        	Local<Object> o = Nan::To<Object>(info[0]).ToLocalChecked();
+            char *buffer = node::Buffer::Data(o);
+            size_t buffer_length = node::Buffer::Length(o);
 
             GstBuffer *gst_buffer = gst_buffer_new_allocate(nullptr, buffer_length, nullptr);
             gst_buffer_fill(gst_buffer, 0, buffer, buffer_length);
 
             if (info.Length() > 1) {
-              char *bufferPTS = node::Buffer::Data(info[1]->ToObject());
+              char *bufferPTS = node::Buffer::Data(Nan::To<Object>(info[1]).ToLocalChecked());
               gst_buffer->pts = GST_READ_UINT64_BE(bufferPTS);
             }
 

@@ -48,15 +48,15 @@ void Pipeline::Init(Nan::ADDON_REGISTER_FUNCTION_ARGS_TYPE exports) {
 	Nan::SetAccessor(proto, Nan::New("delay").ToLocalChecked(), GetDelay, SetDelay);
 	Nan::SetAccessor(proto, Nan::New("latency").ToLocalChecked(), GetLatency, SetLatency);
 	
-	constructor.Reset(ctor->GetFunction());
-	exports->Set(Nan::New("Pipeline").ToLocalChecked(), ctor->GetFunction());
+	constructor.Reset(Nan::GetFunction(ctor).ToLocalChecked());
+	Nan::Set(exports, Nan::New("Pipeline").ToLocalChecked(), Nan::GetFunction(ctor).ToLocalChecked());
 }
 
 NAN_METHOD(Pipeline::New) {
 	if (!info.IsConstructCall())
 		return Nan::ThrowTypeError("Class constructors cannot be invoked without 'new'");
 
-	String::Utf8Value launch(info[0]->ToString());
+	Nan::Utf8String launch(info[0]);
 
 	Pipeline* obj = new Pipeline(*launch);
 	obj->Wrap(info.This());
@@ -106,9 +106,9 @@ void Pipeline::forceKeyUnit(GObject *sink, int cnt) {
 
 NAN_METHOD(Pipeline::ForceKeyUnit) {
 	Pipeline* obj = Nan::ObjectWrap::Unwrap<Pipeline>(info.This());
-	String::Utf8Value name(info[0]->ToString());
+	Nan::Utf8String name(info[0]);
 	GObject *o = obj->findChild(*name);
-	int cnt(info[1]->Int32Value());
+	int cnt(Nan::To<Int32>(info[1]).ToLocalChecked()->Value());
 	obj->forceKeyUnit(o, cnt);
 	info.GetReturnValue().Set(Nan::True());
 }
@@ -120,7 +120,7 @@ GObject * Pipeline::findChild(const char *name) {
 
 NAN_METHOD(Pipeline::FindChild) {
 	Pipeline* obj = Nan::ObjectWrap::Unwrap<Pipeline>(info.This());
-	String::Utf8Value name(info[0]->ToString());
+	Nan::Utf8String name(info[0]);
 	GObject *o = obj->findChild(*name);
 	if(o)
 		info.GetReturnValue().Set(GObjectWrap::NewInstance(info, o));
@@ -128,7 +128,20 @@ NAN_METHOD(Pipeline::FindChild) {
 		info.GetReturnValue().Set(Nan::Undefined());
 }
 
-struct BusRequest {
+class BusRequest : public Nan::AsyncResource {
+	public:
+		BusRequest(Pipeline *obj_, Local<Function> cb)
+			: AsyncResource("node-gst-superficial.BusRequest")
+			, obj(obj_)
+			{
+				callback.Reset(cb);;
+				request.data = this;
+			}
+
+		~BusRequest() {
+			callback.Reset();
+		}
+
 	uv_work_t request;
 	Nan::Persistent<Function> callback;
 	Pipeline *obj;
@@ -148,7 +161,7 @@ void Pipeline::_polledBus(uv_work_t *req, int n) {
 	if(br->msg) {
 		Nan::HandleScope scope;
 		Local<Object> m = Nan::New<Object>();
-		m->Set(Nan::New("type").ToLocalChecked(), Nan::New(GST_MESSAGE_TYPE_NAME(br->msg)).ToLocalChecked());
+		Nan::Set(m, Nan::New("type").ToLocalChecked(), Nan::New(GST_MESSAGE_TYPE_NAME(br->msg)).ToLocalChecked());
 	
 		const GstStructure *structure = (GstStructure*)gst_message_get_structure(br->msg);
 		if(structure)
@@ -157,19 +170,22 @@ void Pipeline::_polledBus(uv_work_t *req, int n) {
 		if(GST_MESSAGE_TYPE(br->msg) == GST_MESSAGE_ERROR) {
 			GError *err = NULL;
 			gchar *name = gst_object_get_path_string(br->msg->src);
-			m->Set(Nan::New("name").ToLocalChecked(), Nan::New(name).ToLocalChecked());
+			Nan::Set(m,Nan::New("name").ToLocalChecked(), Nan::New(name).ToLocalChecked());
 			gst_message_parse_error(br->msg, &err, NULL);
-			m->Set(Nan::New("message").ToLocalChecked(), Nan::New(err->message).ToLocalChecked());
+			Nan::Set(m,Nan::New("message").ToLocalChecked(), Nan::New(err->message).ToLocalChecked());
 		}
 
 		Local<Value> argv[1] = { m };
-		Local<Function> cbCallbackLocal = Nan::New(br->callback);
-		cbCallbackLocal->Call(Nan::GetCurrentContext()->Global(), 1, argv);
+
+		v8::Local<v8::Function> callback = Nan::New(br->callback);
+//		br->callback.Call(1, argv);
+		v8::Local<v8::Object> target = Nan::New<v8::Object>();
+		br->runInAsyncScope(target, callback, 1, argv);
 		
 		gst_message_unref(br->msg);
 	}
 	if(GST_STATE(br->obj->pipeline) != GST_STATE_NULL)
-		uv_queue_work(uv_default_loop(), &br->request, _doPollBus, _polledBus);
+		uv_queue_work(Nan::GetCurrentEventLoop(), &br->request, _doPollBus, _polledBus);
 }
 
 NAN_METHOD(Pipeline::PollBus) {
@@ -182,15 +198,16 @@ NAN_METHOD(Pipeline::PollBus) {
 		return;
 	}
   
-	Handle<Function> callback = Handle<Function>::Cast(info[0]);
+	Local<Function> callback = Local<Function>::Cast(info[0]);
 	
-	BusRequest * br = new BusRequest();
+	BusRequest * br = new BusRequest(obj,callback);
+	/*
 	br->request.data = br;
 	br->callback.Reset(callback);
 	br->obj = obj;
 	obj->Ref();
-	
-	uv_queue_work(uv_default_loop(), &br->request, _doPollBus, _polledBus);
+	*/
+	uv_queue_work(Nan::GetCurrentEventLoop(), &br->request, _doPollBus, _polledBus);
 
 	scope.Escape(Nan::Undefined());
 }
@@ -204,7 +221,7 @@ NAN_GETTER(Pipeline::GetAutoFlushBus) {
 NAN_SETTER(Pipeline::SetAutoFlushBus) {
 	if(value->IsBoolean()) {
 		Pipeline* obj = Nan::ObjectWrap::Unwrap<Pipeline>(info.This());
-		gst_pipeline_set_auto_flush_bus(obj->pipeline, value->BooleanValue());
+		gst_pipeline_set_auto_flush_bus(obj->pipeline, Nan::To<Boolean>(value).ToLocalChecked()->Value());
 	}
 }
 
@@ -217,7 +234,7 @@ NAN_GETTER(Pipeline::GetDelay) {
 NAN_SETTER(Pipeline::SetDelay) {
 	if(value->IsNumber()) {
 		Pipeline* obj = Nan::ObjectWrap::Unwrap<Pipeline>(info.This());
-		gst_pipeline_set_delay(obj->pipeline, DOUBLE_TO_NANOS(value->NumberValue()));
+		gst_pipeline_set_delay(obj->pipeline, DOUBLE_TO_NANOS(Nan::To<Number>(value).ToLocalChecked()->Value()));
 	}
 }
 NAN_GETTER(Pipeline::GetLatency) {
@@ -228,6 +245,6 @@ NAN_GETTER(Pipeline::GetLatency) {
 NAN_SETTER(Pipeline::SetLatency) {
 	if(value->IsNumber()) {
 		Pipeline* obj = Nan::ObjectWrap::Unwrap<Pipeline>(info.This());
-		gst_pipeline_set_latency(obj->pipeline, DOUBLE_TO_NANOS(value->NumberValue()));
+		gst_pipeline_set_latency(obj->pipeline, DOUBLE_TO_NANOS(Nan::To<Number>(value).ToLocalChecked()->Value()));
 	}
 }

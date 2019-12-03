@@ -8,7 +8,7 @@
 
 class Pipeline : public Nan::ObjectWrap {
 	public:
-		static void Init( Handle<Object> exports );
+		static void Init( Local<Object> exports );
 		
 		void play();
 		void pause();
@@ -17,7 +17,7 @@ class Pipeline : public Nan::ObjectWrap {
 		void forceKeyUnit(GObject* sink, int cnt);
 		
 		GObject *findChild( const char *name );
-		Handle<Value> pollBus();
+		Local<Value> pollBus();
 		
 	private:
 		Pipeline(const char *launch);

@@ -4,7 +4,7 @@
 
 #include "GLibHelpers.h"
 
-Handle<Object> createBuffer(char *data, int length) {
+Local<Object> createBuffer(char *data, int length) {
 	Nan::EscapableHandleScope scope;
 
 	Local<Object> buffer = Nan::CopyBuffer(data, length).ToLocalChecked();
@@ -12,35 +12,35 @@ Handle<Object> createBuffer(char *data, int length) {
 	return scope.Escape(buffer);
 }
 
-Handle<Value> gstbuffer_to_v8(GstBuffer *buf) {
+Local<Value> gstbuffer_to_v8(GstBuffer *buf) {
 	if(!buf) return Nan::Null();
 	GstMapInfo map;
 	if(gst_buffer_map(buf, &map, GST_MAP_READ)) {
 		const unsigned char *data = map.data;
 		int length = map.size;
-		Handle<Object> frame = createBuffer((char *)data, length);
+		Local<Object> frame = createBuffer((char *)data, length);
 		gst_buffer_unmap(buf, &map);
 		return frame;
 	}
 	return Nan::Undefined();
 }
 
-Handle<Value> gstsample_to_v8(GstSample *sample) {
+Local<Value> gstsample_to_v8(GstSample *sample) {
 	if(!sample) return Nan::Null();
 	return gstbuffer_to_v8(gst_sample_get_buffer(sample));
 }
 
-Handle<Value> gstvaluearray_to_v8(const GValue *gv) {
+Local<Value> gstvaluearray_to_v8(const GValue *gv) {
 	if(!GST_VALUE_HOLDS_ARRAY(gv)) {
 		Nan::ThrowTypeError("not a GstValueArray");
 		return Nan::Undefined();
 	}
 
 	int size = gst_value_array_get_size(gv);
-	Handle<Array> array = Nan::New<Array>(gst_value_array_get_size(gv));
+	Local<Array> array = Nan::New<Array>(gst_value_array_get_size(gv));
 
 	for(int i=0; i<size; i++) {
-		array->Set(Nan::New<Number>(i), gvalue_to_v8(gst_value_array_get_value(gv,i)));
+		Nan::Set(array, i, gvalue_to_v8(gst_value_array_get_value(gv,i)));
 	}
 	return array;
 }
@@ -52,7 +52,7 @@ Local<Value> gchararray_to_v8(const GValue *gv) {
 	return Nan::New(str).ToLocalChecked();
 }
 
-Handle<Value> gvalue_to_v8(const GValue *gv) {
+Local<Value> gvalue_to_v8(const GValue *gv) {
 	switch(G_VALUE_TYPE(gv)) {
 		case G_TYPE_STRING:
 			return gchararray_to_v8(gv);
@@ -83,8 +83,8 @@ Handle<Value> gvalue_to_v8(const GValue *gv) {
 		}
 
 		Local<Object> result = Nan::New<Object>();
-		result->Set(Nan::New("buf").ToLocalChecked(), gstsample_to_v8(sample));
-		result->Set(Nan::New("caps").ToLocalChecked(), caps);
+		Nan::Set(result, Nan::New("buf").ToLocalChecked(), gstsample_to_v8(sample));
+		Nan::Set(result, Nan::New("caps").ToLocalChecked(), caps);
 		return result;
 	}
 
@@ -101,12 +101,12 @@ Handle<Value> gvalue_to_v8(const GValue *gv) {
 	return Nan::Undefined();
 }
 
-void v8_to_gvalue(Handle<Value> v, GValue *gv, GParamSpec *spec) {
+void v8_to_gvalue(Local<Value> v, GValue *gv, GParamSpec *spec) {
 	if(v->IsNumber()) {
 		g_value_init(gv, G_TYPE_FLOAT);
-		g_value_set_float(gv, v->NumberValue());
+		g_value_set_float(gv, v->ToNumber(Nan::GetCurrentContext()).ToLocalChecked()->Value());
 	} else if(v->IsString()) {
-        String::Utf8Value value(v->ToString());
+        Nan::Utf8String value(v);
 	    if(spec->value_type == GST_TYPE_CAPS) {
 	        GstCaps* caps = gst_caps_from_string(*value);
 	        g_value_init(gv, GST_TYPE_CAPS);
@@ -117,7 +117,7 @@ void v8_to_gvalue(Handle<Value> v, GValue *gv, GParamSpec *spec) {
 	    }
 	} else if(v->IsBoolean()) {
 		g_value_init(gv, G_TYPE_BOOLEAN);
-		g_value_set_boolean(gv, v->BooleanValue());
+		g_value_set_boolean(gv, Nan::To<v8::Boolean>(v).ToLocalChecked()->Value());
 	}
 
 	return;
@@ -128,16 +128,16 @@ void v8_to_gvalue(Handle<Value> v, GValue *gv, GParamSpec *spec) {
     GstStructure helpers
    -------------------------------------------------- */
 gboolean gst_structure_to_v8_value_iterate(GQuark field_id, const GValue *val, gpointer user_data) {
-	Handle<Object> *obj = (Handle<Object>*)user_data;
-	Handle<Value> v = gvalue_to_v8(val);
+	Local<Object> *obj = (Local<Object>*)user_data;
+	Local<Value> v = gvalue_to_v8(val);
 	Local<String> name = Nan::New<String>((const char *)g_quark_to_string(field_id)).ToLocalChecked();
-	(*obj)->Set(name, v);
+	Nan::Set(*obj, name, v);
 	return true;
 }
 
-Handle<Object> gst_structure_to_v8(Handle<Object> obj, const GstStructure *struc) {
+Local<Object> gst_structure_to_v8(Local<Object> obj, const GstStructure *struc) {
 	const gchar *name = gst_structure_get_name(struc);
-	obj->Set(Nan::New("name").ToLocalChecked(), Nan::New(name).ToLocalChecked());
+	Nan::Set(obj, Nan::New("name").ToLocalChecked(), Nan::New(name).ToLocalChecked());
 	gst_structure_foreach(struc, gst_structure_to_v8_value_iterate, &obj);
 	return obj;
 }

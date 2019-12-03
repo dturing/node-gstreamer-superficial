@@ -6,6 +6,9 @@
 	  "include_dirs": [
 		"<!(node -e \"require('nan')\")"
 	  ],
+	  "cflags": [
+	  	"-Wno-cast-function-type"
+	  ],
 	  "conditions" : [
 		["OS=='linux'", {
 			"include_dirs": [
