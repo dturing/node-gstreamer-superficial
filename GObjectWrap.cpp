@@ -33,7 +33,7 @@ Local<Value> GObjectWrap::NewInstance( const Nan::FunctionCallbackInfo<Value>& i
 
 	Local<Context> context = isolate->GetCurrentContext();
 	Local<Function> constructorLocal = Nan::New(constructor);
-	constructorLocal->SetName(String::NewFromUtf8(isolate, G_OBJECT_TYPE_NAME(obj)).ToLocalChecked());
+	constructorLocal->SetName(String::NewFromUtf8(isolate, G_OBJECT_TYPE_NAME(obj), v8::NewStringType::kNormal).ToLocalChecked());
 	Local<Value> argv[argc] = { info[0] };
 	Local<Object> instance = constructorLocal->NewInstance(context, argc, argv).ToLocalChecked();
 
@@ -43,7 +43,7 @@ Local<Value> GObjectWrap::NewInstance( const Nan::FunctionCallbackInfo<Value>& i
 	GParamSpec **properties = g_object_class_list_properties(G_OBJECT_GET_CLASS(obj), &n_properties);
 	for(guint i = 0; i < n_properties; i++) {
 		GParamSpec *property = properties[i];
-		Local<String> name = String::NewFromUtf8(isolate, property->name).ToLocalChecked();
+		Local<String> name = String::NewFromUtf8(isolate, property->name, v8::NewStringType::kNormal).ToLocalChecked();
 		Nan::SetAccessor(instance, name, GObjectWrap::GetProperty, GObjectWrap::SetProperty);
 	}
 
