@@ -19,6 +19,8 @@ class Pipeline : public Nan::ObjectWrap {
 		GObject *findChild( const char *name );
 		Local<Value> pollBus();
 		
+		void setPad( GObject* elem, const char *attribute, const char *padName );
+		
 	private:
 		Pipeline(const char *launch);
 		Pipeline(GstPipeline *pipeline);
@@ -35,6 +37,7 @@ class Pipeline : public Nan::ObjectWrap {
 		static NAN_METHOD(SendEOS);
 		static NAN_METHOD(ForceKeyUnit);
 		static NAN_METHOD(FindChild);
+		static NAN_METHOD(SetPad);
 
 		static void _doPollBus( uv_work_t *req );
 		static void _polledBus( uv_work_t *req, int );

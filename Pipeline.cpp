@@ -42,6 +42,7 @@ void Pipeline::Init(Nan::ADDON_REGISTER_FUNCTION_ARGS_TYPE exports) {
 	Nan::SetPrototypeMethod(ctor, "sendEOS", SendEOS);
 	Nan::SetPrototypeMethod(ctor, "forceKeyUnit", ForceKeyUnit);
 	Nan::SetPrototypeMethod(ctor, "findChild", FindChild);
+	Nan::SetPrototypeMethod(ctor, "setPad", SetPad);
 	Nan::SetPrototypeMethod(ctor, "pollBus", PollBus);
 			
 	Nan::SetAccessor(proto, Nan::New("auto-flush-bus").ToLocalChecked(), GetAutoFlushBus, SetAutoFlushBus);
@@ -126,6 +127,28 @@ NAN_METHOD(Pipeline::FindChild) {
 		info.GetReturnValue().Set(GObjectWrap::NewInstance(info, o));
 	else
 		info.GetReturnValue().Set(Nan::Undefined());
+}
+
+void Pipeline::setPad(GObject *elem, const char *attribute, const char *padName) {
+	GstPad *pad = gst_element_get_static_pad(GST_ELEMENT(elem), padName);
+	if (!pad) {
+		return;
+	}
+	g_object_set(elem, attribute, pad, NULL);
+}
+
+
+NAN_METHOD(Pipeline::SetPad) {
+	Pipeline* obj = Nan::ObjectWrap::Unwrap<Pipeline>(info.This());
+	Nan::Utf8String name(info[0]);
+	GObject *o = obj->findChild(*name);
+	if(!o) {
+		return;
+	}
+
+	Nan::Utf8String attribute(info[1]);
+	Nan::Utf8String padName(info[2]);
+	obj->setPad(o, *attribute, *padName);
 }
 
 class BusRequest : public Nan::AsyncResource {
