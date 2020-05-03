@@ -224,12 +224,7 @@ NAN_METHOD(Pipeline::PollBus) {
 	Local<Function> callback = Local<Function>::Cast(info[0]);
 	
 	BusRequest * br = new BusRequest(obj,callback);
-	/*
-	br->request.data = br;
-	br->callback.Reset(callback);
-	br->obj = obj;
 	obj->Ref();
-	*/
 	uv_queue_work(Nan::GetCurrentEventLoop(), &br->request, _doPollBus, _polledBus);
 
 	scope.Escape(Nan::Undefined());
