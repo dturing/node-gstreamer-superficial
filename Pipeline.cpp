@@ -39,6 +39,7 @@ void Pipeline::Init(Nan::ADDON_REGISTER_FUNCTION_ARGS_TYPE exports) {
 	Nan::SetPrototypeMethod(ctor, "play", Play);
 	Nan::SetPrototypeMethod(ctor, "pause", Pause);
 	Nan::SetPrototypeMethod(ctor, "stop", Stop);
+	Nan::SetPrototypeMethod(ctor, "seek", Seek);
 	Nan::SetPrototypeMethod(ctor, "sendEOS", SendEOS);
 	Nan::SetPrototypeMethod(ctor, "forceKeyUnit", ForceKeyUnit);
 	Nan::SetPrototypeMethod(ctor, "findChild", FindChild);
@@ -98,6 +99,19 @@ void Pipeline::pause() {
 NAN_METHOD(Pipeline::Pause) {
 	Pipeline* obj = Nan::ObjectWrap::Unwrap<Pipeline>(info.This());
 	obj->pause();
+}
+
+gboolean Pipeline::seek(int time_nanoseconds) {
+  return gst_element_seek (GST_ELEMENT(pipeline), 1.0, GST_FORMAT_TIME, GST_SEEK_FLAG_FLUSH,
+                         GST_SEEK_TYPE_SET, time_nanoseconds,
+                         GST_SEEK_TYPE_NONE, GST_CLOCK_TIME_NONE);
+}
+
+NAN_METHOD(Pipeline::Seek) {
+	Pipeline* obj = Nan::ObjectWrap::Unwrap<Pipeline>(info.This());
+	gint64 t(Nan::To<Int32>(info[1]).ToLocalChecked()->Value());
+
+	info.GetReturnValue().Set(Nan::New<Boolean>(obj->seek(t)));
 }
 
 void Pipeline::forceKeyUnit(GObject *sink, int cnt) {
