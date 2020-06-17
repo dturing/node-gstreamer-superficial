@@ -88,6 +88,6 @@ in package.json.
 
 ## Requisites
 
-* `libgstreamer-plugins-base1.0-dev` with APT
-* `libgstreamer1.0-dev` with APT
-* `nan`: `npm -i nan --save`
+* `libgstreamer-plugins-base1.0-dev`
+* `libgstreamer1.0-dev`
+* `nan`
