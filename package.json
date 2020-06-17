@@ -50,6 +50,10 @@
     {
       "name": "maruware",
       "url": "https://github.com/maruware"
+    },
+    {
+      "name": "Luis G. Leon-Vega",
+      "url": "https://github.com/lleon95"
     }
   ],
   "dependencies": {
