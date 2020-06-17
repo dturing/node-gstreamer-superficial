@@ -1,5 +1,5 @@
-#include <node.h>
-#include <v8.h>
+#include <node/node.h>
+#include <node/v8.h>
 
 #include "GLibHelpers.h"
 #include "GObjectWrap.h"

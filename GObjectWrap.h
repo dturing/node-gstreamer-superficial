@@ -1,7 +1,7 @@
 #ifndef __GObjectWrap_h__
 #define __GObjectWrap_h__
 
-#include <nan.h>
+#include <node/nan.h>
 #include <gst/gst.h>
 
 #include "GLibHelpers.h"
