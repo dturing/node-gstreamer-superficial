@@ -10,6 +10,7 @@ include_directories(
     ${NODE_INCLUDE_DIRS}
     ./node_modules/nan
     ${GST_INCLUDE_DIRS}
+    ${gstreamer-1.0_INCLUDE_DIRS}
 )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
