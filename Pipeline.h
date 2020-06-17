@@ -1,7 +1,7 @@
 #ifndef __Pipeline_h__
 #define __Pipeline_h__
 
-#include <node/nan.h>
+#include <nan.h>
 #include <gst/gst.h>
 
 #include "GLibHelpers.h"

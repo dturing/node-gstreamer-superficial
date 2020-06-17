@@ -1,4 +1,4 @@
-#include <node/nan.h>
+#include <nan.h>
 #include <gst/gst.h>
 #include <gst/gstcaps.h>
 

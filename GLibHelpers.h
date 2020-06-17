@@ -1,7 +1,7 @@
 #ifndef __GLibHelpers_h__
 #define __GLibHelpers_h__
 
-#include <node/nan.h>
+#include <nan.h>
 #include <gst/gst.h>
 
 using namespace v8;

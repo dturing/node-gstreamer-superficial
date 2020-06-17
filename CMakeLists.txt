@@ -1,10 +1,13 @@
 cmake_minimum_required(VERSION 2.8.4)
 project(gstreamer-superficial)
 
+set(NODE_INCLUDE_DIRS /usr/include/node)
+
 find_package(PkgConfig)
 pkg_check_modules(gstreamer-1.0 gstreamer-app-1.0 gstreamer-video-1.0)
 
 include_directories(
+    ${NODE_INCLUDE_DIRS}
     ./node_modules/nan
     ${GST_INCLUDE_DIRS}
 )
