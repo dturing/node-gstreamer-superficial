@@ -1,7 +1,11 @@
 cmake_minimum_required(VERSION 2.8.4)
 project(gstreamer-superficial)
 
-set(NODE_INCLUDE_DIRS /usr/include/node)
+if (NOT DEFINED ENV{NODE_INCLUDE_DIRS})
+    set(NODE_INCLUDE_DIRS /usr/include/node)
+else()
+    set(NODE_INCLUDE_DIRS $ENV{NODE_INCLUDE_DIRS})
+endif()
 
 find_package(PkgConfig)
 pkg_check_modules(gstreamer-1.0 gstreamer-app-1.0 gstreamer-video-1.0)
