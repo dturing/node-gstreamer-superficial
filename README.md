@@ -85,3 +85,9 @@ This handles retaining the streamheader to feed first to every newly connected c
 gstreamer-superficial was originally written by Daniel Turing, and has 
 received contributions from various individuals as seen on github and
 in package.json.
+
+## Requisites
+
+* `libgstreamer-plugins-base1.0-dev`
+* `libgstreamer1.0-dev`
+* `nan`
