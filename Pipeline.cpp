@@ -40,6 +40,8 @@ void Pipeline::Init(Nan::ADDON_REGISTER_FUNCTION_ARGS_TYPE exports) {
 	Nan::SetPrototypeMethod(ctor, "pause", Pause);
 	Nan::SetPrototypeMethod(ctor, "stop", Stop);
 	Nan::SetPrototypeMethod(ctor, "seek", Seek);
+	Nan::SetPrototypeMethod(ctor, "queryPosition", QueryPosition);
+	Nan::SetPrototypeMethod(ctor, "queryDuration", QueryDuration);
 	Nan::SetPrototypeMethod(ctor, "sendEOS", SendEOS);
 	Nan::SetPrototypeMethod(ctor, "forceKeyUnit", ForceKeyUnit);
 	Nan::SetPrototypeMethod(ctor, "findChild", FindChild);
@@ -112,6 +114,34 @@ NAN_METHOD(Pipeline::Seek) {
 	gint64 t(Nan::To<Int32>(info[1]).ToLocalChecked()->Value());
 
 	info.GetReturnValue().Set(Nan::New<Boolean>(obj->seek(t)));
+}
+
+gint64 Pipeline::queryPosition() {
+  gint64 pos;
+  gst_element_query_position (GST_ELEMENT(pipeline), GST_FORMAT_TIME, &pos);
+  return pos;
+}
+
+NAN_METHOD(Pipeline::QueryPosition) {
+	Pipeline* obj = Nan::ObjectWrap::Unwrap<Pipeline>(info.This());
+	gint64 t = obj->queryPosition();
+	double r = (double)t/1000000000;
+
+	info.GetReturnValue().Set(Nan::New<Number>(r));
+}
+
+gint64 Pipeline::queryDuration() {
+  gint64 dur;
+  gst_element_query_duration (GST_ELEMENT(pipeline), GST_FORMAT_TIME, &dur);
+  return dur;
+}
+
+NAN_METHOD(Pipeline::QueryDuration) {
+	Pipeline* obj = Nan::ObjectWrap::Unwrap<Pipeline>(info.This());
+	gint64 t = obj->queryDuration();
+	double r = (double)t/1000000000;
+
+	info.GetReturnValue().Set(Nan::New<Number>(r));
 }
 
 void Pipeline::forceKeyUnit(GObject *sink, int cnt) {
