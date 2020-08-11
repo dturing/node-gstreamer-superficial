@@ -9,14 +9,3 @@ pipeline.play();
 setInterval( ()=>{
 	console.log("Query return:", pipeline.queryPosition(), "/", pipeline.queryDuration());
 }, 500)
-/*
-// Loop
-pipeline.pollBus( function(msg) {
-	switch( msg.type ) {
-		case 'eos': 
-			console.log('End of Stream');
-			pipeline.seek(0);
-			break;
-	}
-});
-*/
