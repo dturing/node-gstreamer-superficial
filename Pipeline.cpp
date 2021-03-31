@@ -111,7 +111,7 @@ gboolean Pipeline::seek(int time_nanoseconds) {
 
 NAN_METHOD(Pipeline::Seek) {
 	Pipeline* obj = Nan::ObjectWrap::Unwrap<Pipeline>(info.This());
-	gint64 t(Nan::To<Int32>(info[1]).ToLocalChecked()->Value());
+	gint64 t(Nan::To<Int32>(info[0]).ToLocalChecked()->Value());
 
 	info.GetReturnValue().Set(Nan::New<Boolean>(obj->seek(t)));
 }
