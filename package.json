@@ -1,6 +1,6 @@
 {
   "name": "gstreamer-superficial",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Superficial GStreamer binding",
   "author": {
     "name": "Daniel Turing",
@@ -57,7 +57,7 @@
     }
   ],
   "dependencies": {
-    "nan": "^2.14.0"
+    "nan": "^2.15.0"
   },
   "devDependencies": {
     "morgan": "^1.9.1"
