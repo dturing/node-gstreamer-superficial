@@ -39,7 +39,7 @@ There is a simple `.seek(position, flags)` function. Normally you should pass 1 
 
 You can query the pipeline's duration and current position with `.getDuration()` and `.getPosition()` (both might return -1). All time position values are in Seconds.
 
-(see also _examples/seek.js)
+(see also _examples/seek.js_)
 
 ### Polling the GStreamer Pipeline Bus
 
