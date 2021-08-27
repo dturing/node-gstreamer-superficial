@@ -103,17 +103,19 @@ NAN_METHOD(Pipeline::Pause) {
 	obj->pause();
 }
 
-gboolean Pipeline::seek(int time_nanoseconds) {
-  return gst_element_seek (GST_ELEMENT(pipeline), 1.0, GST_FORMAT_TIME, GST_SEEK_FLAG_FLUSH,
+gboolean Pipeline::seek(gint64 time_nanoseconds, GstSeekFlags flags) {
+  return gst_element_seek (GST_ELEMENT(pipeline), 1.0, GST_FORMAT_TIME, flags,
                          GST_SEEK_TYPE_SET, time_nanoseconds,
                          GST_SEEK_TYPE_NONE, GST_CLOCK_TIME_NONE);
 }
 
 NAN_METHOD(Pipeline::Seek) {
 	Pipeline* obj = Nan::ObjectWrap::Unwrap<Pipeline>(info.This());
-	gint64 t(Nan::To<Int32>(info[1]).ToLocalChecked()->Value());
+	gint64 t(Nan::To<Int32>(info[0]).ToLocalChecked()->Value());
+	t *= GST_SECOND;
+	GstSeekFlags flags((GstSeekFlags)Nan::To<Int32>(info[1]).ToLocalChecked()->Value());
 
-	info.GetReturnValue().Set(Nan::New<Boolean>(obj->seek(t)));
+	info.GetReturnValue().Set(Nan::New<Boolean>(obj->seek(t,flags)));
 }
 
 gint64 Pipeline::queryPosition() {
@@ -125,7 +127,7 @@ gint64 Pipeline::queryPosition() {
 NAN_METHOD(Pipeline::QueryPosition) {
 	Pipeline* obj = Nan::ObjectWrap::Unwrap<Pipeline>(info.This());
 	gint64 t = obj->queryPosition();
-	double r = (double)t/1000000000;
+	double r = t==-1 ? -1 : (double)t/GST_SECOND;
 
 	info.GetReturnValue().Set(Nan::New<Number>(r));
 }
@@ -139,7 +141,7 @@ gint64 Pipeline::queryDuration() {
 NAN_METHOD(Pipeline::QueryDuration) {
 	Pipeline* obj = Nan::ObjectWrap::Unwrap<Pipeline>(info.This());
 	gint64 t = obj->queryDuration();
-	double r = (double)t/1000000000;
+	double r = t==-1 ? -1 : (double)t/GST_SECOND;
 
 	info.GetReturnValue().Set(Nan::New<Number>(r));
 }

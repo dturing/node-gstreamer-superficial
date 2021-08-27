@@ -33,6 +33,13 @@ Object.assign(target.text, {
 Pipeline also knows `.stop()`, `.pause()` and `.pollBus()`,
 the elements returned by `.findChild()` getting and setting all properties the real [`GObject`](https://developer.gnome.org/gobject/stable/gobject-The-Base-Object-Type.html)s do, appsinks also support `.pull()` (see below). 
 
+### Seeking and Querying Position and Duration
+
+There is a simple `.seek(position, flags)` function. Normally you should pass 1 for flags (GST_SEEK_FLAG_FLUSH). See [Flags](https://gstreamer.freedesktop.org/documentation/gstreamer/gstsegment.html?gi-language=c#GST_SEEK_FLAG_NONE) and [Seek Docs](https://gstreamer.freedesktop.org/documentation/additional/design/seeking.html?gi-language=c).
+
+You can query the pipeline's duration and current position with `.getDuration()` and `.getPosition()` (both might return -1). All time position values are in Seconds.
+
+(see also _examples/seek.js)
 
 ### Polling the GStreamer Pipeline Bus
 

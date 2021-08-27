@@ -13,7 +13,7 @@ class Pipeline : public Nan::ObjectWrap {
 		void play();
 		void pause();
 		void stop();
-		gboolean seek(int time_nanoseconds);
+		gboolean seek(gint64 time_nanoseconds, GstSeekFlags flags);
 		gint64 queryPosition();
 		gint64 queryDuration();
 		void sendEOS();
