@@ -231,10 +231,14 @@ void Pipeline::_polledBus(uv_work_t *req, int n) {
 		Nan::HandleScope scope;
 		Local<Object> m = Nan::New<Object>();
 		Nan::Set(m, Nan::New("type").ToLocalChecked(), Nan::New(GST_MESSAGE_TYPE_NAME(br->msg)).ToLocalChecked());
-	
+
 		const GstStructure *structure = (GstStructure*)gst_message_get_structure(br->msg);
 		if(structure)
 			gst_structure_to_v8(m, structure);
+
+		GstObject *src = br->msg->src;
+		Local<String> v = Nan::New<String>((const char *)src->name).ToLocalChecked();
+		Nan::Set(m, Nan::New("_src_element_name").ToLocalChecked(), v);
 
 		if(GST_MESSAGE_TYPE(br->msg) == GST_MESSAGE_ERROR) {
 			GError *err = NULL;
