@@ -29,11 +29,11 @@ Pipeline::Pipeline(GstPipeline* pipeline) {
 
 void Pipeline::Init(Nan::ADDON_REGISTER_FUNCTION_ARGS_TYPE exports) {
 	Nan::HandleScope scope;
-	
+
 	Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(Pipeline::New);
 	ctor->InstanceTemplate()->SetInternalFieldCount(1);
 	ctor->SetClassName(Nan::New("Pipeline").ToLocalChecked());
-	
+
 	Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
 	// Prototype
 	Nan::SetPrototypeMethod(ctor, "play", Play);
@@ -46,12 +46,13 @@ void Pipeline::Init(Nan::ADDON_REGISTER_FUNCTION_ARGS_TYPE exports) {
 	Nan::SetPrototypeMethod(ctor, "forceKeyUnit", ForceKeyUnit);
 	Nan::SetPrototypeMethod(ctor, "findChild", FindChild);
 	Nan::SetPrototypeMethod(ctor, "setPad", SetPad);
+	Nan::SetPrototypeMethod(ctor, "getPad", GetPad);
 	Nan::SetPrototypeMethod(ctor, "pollBus", PollBus);
-			
+
 	Nan::SetAccessor(proto, Nan::New("auto-flush-bus").ToLocalChecked(), GetAutoFlushBus, SetAutoFlushBus);
 	Nan::SetAccessor(proto, Nan::New("delay").ToLocalChecked(), GetDelay, SetDelay);
 	Nan::SetAccessor(proto, Nan::New("latency").ToLocalChecked(), GetLatency, SetLatency);
-	
+
 	constructor.Reset(Nan::GetFunction(ctor).ToLocalChecked());
 	Nan::Set(exports, Nan::New("Pipeline").ToLocalChecked(), Nan::GetFunction(ctor).ToLocalChecked());
 }
@@ -183,7 +184,6 @@ void Pipeline::setPad(GObject *elem, const char *attribute, const char *padName)
 	g_object_set(elem, attribute, pad, NULL);
 }
 
-
 NAN_METHOD(Pipeline::SetPad) {
 	Pipeline* obj = Nan::ObjectWrap::Unwrap<Pipeline>(info.This());
 	Nan::Utf8String name(info[0]);
@@ -196,6 +196,29 @@ NAN_METHOD(Pipeline::SetPad) {
 	Nan::Utf8String padName(info[2]);
 	obj->setPad(o, *attribute, *padName);
 }
+
+GObject * Pipeline::getPad(GObject* elem, const char *padName ) {
+	GstPad *pad = gst_element_get_static_pad(GST_ELEMENT(elem), padName);
+	return G_OBJECT(pad);
+}
+
+NAN_METHOD(Pipeline::GetPad) {
+	Pipeline* obj = Nan::ObjectWrap::Unwrap<Pipeline>(info.This());
+	Nan::Utf8String name(info[0]);
+	GObject *o = obj->findChild(*name);
+	if (!o) {
+		return;
+	}
+
+	Nan::Utf8String padName(info[1]);
+	GObject *pad = obj->getPad(o, *padName);
+	if(pad) {
+		info.GetReturnValue().Set(GObjectWrap::NewInstance(info, pad));
+	} else {
+		info.GetReturnValue().Set(Nan::Undefined());
+	}
+}
+
 
 class BusRequest : public Nan::AsyncResource {
 	public:
@@ -254,7 +277,7 @@ void Pipeline::_polledBus(uv_work_t *req, int n) {
 //		br->callback.Call(1, argv);
 		v8::Local<v8::Object> target = Nan::New<v8::Object>();
 		br->runInAsyncScope(target, callback, 1, argv);
-		
+
 		gst_message_unref(br->msg);
 	}
 	if(GST_STATE(br->obj->pipeline) != GST_STATE_NULL)
@@ -270,9 +293,9 @@ NAN_METHOD(Pipeline::PollBus) {
 		scope.Escape(Nan::Undefined());
 		return;
 	}
-  
+
 	Local<Function> callback = Local<Function>::Cast(info[0]);
-	
+
 	BusRequest * br = new BusRequest(obj,callback);
 	obj->Ref();
 	uv_queue_work(Nan::GetCurrentEventLoop(), &br->request, _doPollBus, _polledBus);
