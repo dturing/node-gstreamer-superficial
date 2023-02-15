@@ -104,15 +104,15 @@ NAN_METHOD(Pipeline::Pause) {
 	obj->pause();
 }
 
-gboolean Pipeline::seek(gint64 time_nanoseconds, GstSeekFlags flags) {
+gboolean Pipeline::seek(gint64 time_seconds, GstSeekFlags flags) {
   return gst_element_seek (GST_ELEMENT(pipeline), 1.0, GST_FORMAT_TIME, flags,
-                         GST_SEEK_TYPE_SET, time_nanoseconds,
+                         GST_SEEK_TYPE_SET, time_seconds,
                          GST_SEEK_TYPE_NONE, GST_CLOCK_TIME_NONE);
 }
 
 NAN_METHOD(Pipeline::Seek) {
 	Pipeline* obj = Nan::ObjectWrap::Unwrap<Pipeline>(info.This());
-	gint64 t(Nan::To<Int32>(info[0]).ToLocalChecked()->Value());
+	gint64 t(Nan::To<int64_t>(info[0]).ToChecked());
 	t *= GST_SECOND;
 	GstSeekFlags flags((GstSeekFlags)Nan::To<Int32>(info[1]).ToLocalChecked()->Value());
 
