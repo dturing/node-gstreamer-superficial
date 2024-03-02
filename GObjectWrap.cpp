@@ -52,6 +52,7 @@ Local<Value> GObjectWrap::NewInstance( const Nan::FunctionCallbackInfo<Value>& i
 	}
 	if (GST_IS_APP_SRC(obj)) {
 	    Nan::SetMethod(instance, "push", GstAppSrcPush);
+            Nan::SetMethod(instance, "sendEos", GstAppSrcSendEndOfStream);
 	}
 
 	info.GetReturnValue().Set(instance);
@@ -106,6 +107,7 @@ class PullWorker : public Nan::AsyncWorker {
 			Nan::HandleScope scope;
 
 			Local<Value> buf;
+                        Local<Value> pts;
 			Local<Object> caps = Nan::New<Object>();
 			if (sample) {
 
@@ -116,14 +118,24 @@ class PullWorker : public Nan::AsyncWorker {
 				}
 
 				buf = gstsample_to_v8(sample);
+
+                                // Extracting pts from the sample
+                                GstBuffer *buffer = gst_sample_get_buffer(sample);
+                                if (buffer) {
+                                        pts = Nan::New<Number>(static_cast<double>(buffer->pts));
+                                } else {
+                                        pts = Nan::Null();
+                                }
+
 				gst_sample_unref(sample);
 				sample = NULL;
 			} else {
-				buf =  Nan::Null();
+                                pts = Nan::Null();
+				buf = Nan::Null();
 			}
 
-			Local<Value> argv[] = { buf, caps };
-			callback->Call(2, argv, async_resource);
+			Local<Value> argv[] = { buf, caps, pts };
+			callback->Call(3, argv, async_resource);
 		}
 
 	private:
@@ -160,4 +172,14 @@ NAN_METHOD(GObjectWrap::GstAppSrcPush) {
         // TODO throw an error if arg is not a buffer object?
     }
     // TODO throw an error if no args are given?
+}
+
+NAN_METHOD(GObjectWrap::GstAppSrcSendEndOfStream) {
+    auto *obj = Nan::ObjectWrap::Unwrap<GObjectWrap>(info.This());
+    GstFlowReturn result = gst_app_src_end_of_stream(GST_APP_SRC(obj->obj));
+
+    if (result != GST_FLOW_OK) {
+        // Handle error
+        Nan::ThrowError("Failed to send End-Of-Stream event.");
+    }
 }
