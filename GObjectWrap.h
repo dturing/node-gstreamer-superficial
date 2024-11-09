@@ -19,7 +19,7 @@ class GObjectWrap : public Nan::ObjectWrap {
 
 	private:
 		GObjectWrap() {}
-		~GObjectWrap() {}
+		~GObjectWrap();
 
 		GObject *obj;
 

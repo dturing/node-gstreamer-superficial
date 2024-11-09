@@ -27,6 +27,13 @@ Pipeline::Pipeline(GstPipeline* pipeline) {
 	this->pipeline = pipeline;
 }
 
+Pipeline::~Pipeline() {
+    if (pipeline) {
+        gst_object_unref(GST_OBJECT(pipeline));
+        pipeline = nullptr;
+    }
+}
+
 void Pipeline::Init(Nan::ADDON_REGISTER_FUNCTION_ARGS_TYPE exports) {
 	Nan::HandleScope scope;
 

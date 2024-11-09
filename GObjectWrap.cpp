@@ -19,6 +19,13 @@ void GObjectWrap::Init() {
 	constructor.Reset(Nan::GetFunction(ctor).ToLocalChecked());
 }
 
+GObjectWrap::~GObjectWrap() {
+    if (obj) {
+        g_object_unref(G_OBJECT(obj));
+        obj = nullptr;
+    }
+}
+
 NAN_METHOD(GObjectWrap::New) {
 	GObjectWrap* obj = new GObjectWrap();
 	obj->Wrap(info.This());
